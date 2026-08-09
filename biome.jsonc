@@ -1,0 +1,164 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": [
+      "**/*.{js,jsx,json,mjs,ts,tsx}",
+      "!**/.vinxi",
+      "!**/.output",
+      "!**/.nitro",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/*.gen.ts",
+      "!**/.content-collections",
+      "!**/patches"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 80
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "trailingCommas": "none",
+      "arrowParentheses": "asNeeded",
+      "semicolons": "always"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "a11y": {
+        "recommended": true,
+        "noLabelWithoutControl": "error",
+        "noSvgWithoutTitle": "error",
+        "noStaticElementInteractions": "error",
+        "useAriaPropsSupportedByRole": "error",
+        "useButtonType": "error",
+        "useSemanticElements": "off"
+      },
+      "complexity": {
+        "recommended": true,
+        "noForEach": "error",
+        "noBannedTypes": "error",
+        "noUselessContinue": "error",
+        "noUselessSwitchCase": "error",
+        "noUselessTernary": "error",
+        "useArrowFunction": "error",
+        "useDateNow": "error",
+        "useFlatMap": "error"
+      },
+      "correctness": {
+        "recommended": true,
+        "noUnsafeFinally": "error",
+        "useJsxKeyInIterable": "error",
+        "noEmptyCharacterClassInRegex": "error",
+        "noEmptyPattern": "error",
+        "noInvalidUseBeforeDeclaration": "error",
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error",
+        "noUnusedFunctionParameters": "error",
+        "useExhaustiveDependencies": "error"
+      },
+      "nursery": {
+        "recommended": true,
+        "noShadow": "error"
+      },
+      "performance": {
+        "recommended": true,
+        "noAccumulatingSpread": "off"
+      },
+      "security": {
+        "recommended": true,
+        "noDangerouslySetInnerHtml": "error"
+      },
+      "style": {
+        "recommended": true,
+        "noNonNullAssertion": "off",
+        "noParameterAssign": "off",
+        "noUselessElse": "error",
+        "noYodaExpression": "error",
+        "useCollapsedElseIf": "error",
+        "useCollapsedIf": "off",
+        "useConst": "error",
+        "useConsistentTypeDefinitions": {
+          "level": "error",
+          "fix": "safe",
+          "options": {
+            "style": "type"
+          }
+        },
+        "useExportType": "error",
+        "useForOf": "error",
+        "useImportType": "error",
+        "useNodejsImportProtocol": "error",
+        "useTemplate": "error"
+      },
+      "suspicious": {
+        "recommended": true,
+        "noAlert": "error",
+        "noArrayIndexKey": "error",
+        "noAssignInExpressions": "error",
+        "noAsyncPromiseExecutor": "error",
+        "noImplicitAnyLet": "error",
+        "noTemplateCurlyInString": "error",
+        "useIterableCallbackReturn": "error",
+        "noNonNullAssertedOptionalChain": "off",
+        "noConsole": {
+          "level": "error",
+          "options": {
+            "allow": ["debug", "error", "info", "time", "timeEnd", "warn"]
+          }
+        },
+        "noDebugger": "error",
+        "noExplicitAny": "error"
+      }
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "useSortedAttributes": "on",
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [
+              [":NODE:", ":PACKAGE:", ":PACKAGE_WITH_PROTOCOL:", ":ALIAS:"],
+              [":PATH:"]
+            ]
+          }
+        }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.test.ts", "**/*.test.tsx"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/components/landing/**"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useValidAnchor": "off"
+          }
+        }
+      }
+    }
+  ]
+}

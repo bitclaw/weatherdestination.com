@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1784686297793,
+      "tag": "0000_faithful_tony_stark",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1786061690605,
+      "tag": "0001_misty_meteorite",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786238253504,
+      "tag": "0002_hard_richard_fisk",
+      "breakpoints": true
+    }
+  ]
+}

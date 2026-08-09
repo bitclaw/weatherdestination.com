@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build output
+.output/
+.nitro/
+.vinxi/
+dist/
+
+# Generated
+src/routeTree.gen.ts
+.content-collections/
+
+# TanStack temp files
+.tanstack/
+
+# Database
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Local env files
+.env
+.env.local
+.env.production
+.env.*.local
+# E2E test output and isolated databases
+e2e/.tmp/
+e2e/data/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Logs
+.bun-debug.log
+
+# Load test session tokens (signed cookies, must not be committed)
+data/loadtest-sessions.json

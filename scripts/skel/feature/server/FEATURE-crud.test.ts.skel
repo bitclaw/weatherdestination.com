@@ -1,0 +1,92 @@
+import { describe, expect, it } from 'bun:test';
+import { makeTestDb } from '@/test/db';
+import { ERROR_CODES } from '@/lib/constants';
+import {
+  createEntity,
+  deleteEntity,
+  ENTITY_STATUSES,
+  getEntityById,
+  listEntities,
+  updateEntity
+} from './FEATURE.server';
+
+describe('FEATURE.server', () => {
+  it('creates entity with defaults', () => {
+    const db = makeTestDb();
+    const result = createEntity(db, { title: 'Hello' });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.title).toBe('Hello');
+    expect(result.data.status).toBe('active');
+    expect(getEntityById(db, result.data.id)?.title).toBe('Hello');
+  });
+
+  it('ENTITY_STATUSES covers all valid values', () => {
+    expect(ENTITY_STATUSES).toContain('active');
+    expect(ENTITY_STATUSES).toContain('archived');
+  });
+
+  it('lists entities newest first', () => {
+    const db = makeTestDb();
+    const first = createEntity(db, { title: 'First' });
+    const second = createEntity(db, { title: 'Second' });
+
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    if (!first.ok || !second.ok) return;
+
+    const entities = listEntities(db);
+    expect(entities).toHaveLength(2);
+    expect(entities[0]?.id).toBe(second.data.id);
+    expect(entities[1]?.id).toBe(first.data.id);
+  });
+
+  it('updates title and status', () => {
+    const db = makeTestDb();
+    const created = createEntity(db, { title: 'Original' });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const updated = updateEntity(db, {
+      id: created.data.id,
+      title: 'Updated',
+      status: 'archived'
+    });
+
+    expect(updated.ok).toBe(true);
+    if (!updated.ok) return;
+    expect(updated.data.title).toBe('Updated');
+    expect(updated.data.status).toBe('archived');
+    expect(updated.data.updated_at).toBeGreaterThan(0);
+  });
+
+  it('deletes an entity', () => {
+    const db = makeTestDb();
+    const created = createEntity(db, { title: 'Temp' });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    const result = deleteEntity(db, created.data.id);
+    expect(result.ok).toBe(true);
+    expect(getEntityById(db, created.data.id)).toBeNull();
+  });
+
+  it('returns not found when deleting missing entity', () => {
+    const db = makeTestDb();
+
+    const result = deleteEntity(db, 'missing');
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.code).toBe(ERROR_CODES.NOT_FOUND);
+  });
+
+  it('returns not found when updating missing entity', () => {
+    const db = makeTestDb();
+
+    const result = updateEntity(db, { id: 'missing', title: 'x' });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.code).toBe(ERROR_CODES.NOT_FOUND);
+  });
+});

@@ -1,0 +1,11 @@
+# MyApp
+
+> Your SaaS description here.
+
+## Pages
+
+- [Home](https://myapp.com/): Overview, pricing, and feature summary.
+- [Features](https://myapp.com/features): Full feature breakdown.
+- [Pricing](https://myapp.com/pricing): Plans and pricing.
+- [Blog](https://myapp.com/blog): Articles and changelog notes.
+- [Changelog](https://myapp.com/changelog): Release history.

@@ -1,0 +1,11 @@
+[install]
+ignoreScripts = true
+# Only install package versions published at least 48 hours ago
+minimumReleaseAge = 172800
+minimumReleaseAgeExcludes = ["typescript", "@types/node", "@bitclaw/loadtest", "@bitclaw/sqlite", "@bitclaw/jobs", "@bitclaw/result", "@bitclaw/disposable-email", "better-auth", "@better-auth/core", "@better-auth/drizzle-adapter", "@better-auth/kysely-adapter", "@better-auth/memory-adapter", "@better-auth/mongo-adapter", "@better-auth/prisma-adapter", "@better-auth/telemetry"]
+
+[test]
+preload = ["./src/test/setup.ts"]
+
+[test.env]
+NODE_ENV = "test"

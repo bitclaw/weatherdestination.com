@@ -1,0 +1,131 @@
+import type { Database } from 'bun:sqlite';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it
+} from 'bun:test';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { randomUUIDv7 } from 'bun';
+import { ERROR_CODES } from '@/lib/constants';
+import { closeUserDb, getUserDb } from '@/lib/db/user-db';
+import {
+  createEntity,
+  deleteEntity,
+  getEntityById,
+  listEntities,
+  updateEntity
+} from './FEATURE.server';
+
+// =============================================================================
+// FEATURE , DB LOGIC TESTS (getUserDb + USER_DATA_DIR pattern)
+// =============================================================================
+// Use this pattern instead of makeTestDb() when:
+//   - Porting from a codebase that uses mock.module for auth/DB/framework layers.
+//     Extract the DB logic to FEATURE.server.ts and test it directly , zero mocks.
+//   - The logic under test calls getUserDb() internally (job handlers, utilities
+//     that take userId rather than db). makeTestDb() can't substitute there.
+//   - You need real file-based SQLite behaviour (WAL, concurrent writes).
+//
+// Use makeTestDb() from @/test/db for simple CRUD tests that have none of the
+// above requirements , it is faster and needs no env var management.
+// See FEATURE-crud.test.ts for that pattern.
+// =============================================================================
+
+let testDir: string;
+let originalUserDataDir: string | undefined;
+let userId: string;
+let db: Database;
+
+beforeAll(() => {
+  testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'warpkit-FEATURE-test-'));
+  originalUserDataDir = process.env.USER_DATA_DIR;
+  process.env.USER_DATA_DIR = testDir;
+  userId = randomUUIDv7();
+  db = getUserDb(userId);
+});
+
+afterAll(() => {
+  closeUserDb(userId);
+  if (originalUserDataDir !== undefined) {
+    process.env.USER_DATA_DIR = originalUserDataDir;
+  } else {
+    delete process.env.USER_DATA_DIR;
+  }
+  fs.rmSync(testDir, { recursive: true, force: true });
+});
+
+beforeEach(() => {
+  db.run('DELETE FROM entities');
+});
+
+describe('createEntity', () => {
+  it('given valid input, creates entity', () => {
+    const result = createEntity(db, { title: 'Hello' });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.title).toBe('Hello');
+    expect(result.data.status).toBe('active');
+    expect(getEntityById(db, result.data.id)?.title).toBe('Hello');
+  });
+
+  it('lists entities newest first', () => {
+    createEntity(db, { title: 'First' });
+    createEntity(db, { title: 'Second' });
+
+    const items = listEntities(db);
+    expect(items).toHaveLength(2);
+    expect(items[0]?.title).toBe('Second');
+  });
+});
+
+describe('updateEntity', () => {
+  it('given existing entity, updates it', () => {
+    const created = createEntity(db, { title: 'Original' });
+    if (!created.ok) throw new Error('setup failed');
+
+    const result = updateEntity(db, {
+      id: created.data.id,
+      title: 'Updated',
+      status: 'archived'
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.title).toBe('Updated');
+    expect(result.data.status).toBe('archived');
+  });
+
+  it('given missing entity, returns NOT_FOUND', () => {
+    const result = updateEntity(db, { id: 'missing', title: 'x' });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.code).toBe(ERROR_CODES.NOT_FOUND);
+  });
+});
+
+describe('deleteEntity', () => {
+  it('given existing entity, deletes it', () => {
+    const created = createEntity(db, { title: 'Temp' });
+    if (!created.ok) throw new Error('setup failed');
+
+    const result = deleteEntity(db, created.data.id);
+
+    expect(result.ok).toBe(true);
+    expect(getEntityById(db, created.data.id)).toBeNull();
+  });
+
+  it('given missing entity, returns NOT_FOUND', () => {
+    const result = deleteEntity(db, 'missing');
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.code).toBe(ERROR_CODES.NOT_FOUND);
+  });
+});

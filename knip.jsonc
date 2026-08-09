@@ -1,0 +1,52 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "src/router.tsx",
+    "src/start.ts",
+    "src/client.tsx",
+    "src/routes/**/*.{ts,tsx}",
+    "src/components/**/*.{ts,tsx}",
+    "src/features/**/*.{ts,tsx}",
+    "src/lib/**/*.test.{ts,tsx}",
+    "src/pages/**/*.{ts,tsx}",
+    "src/assets/**/*.{ts,tsx}",
+    "src/server/**/*.{ts,tsx}",
+    "src/test/**/*.{ts,tsx}",
+    "tests/**/*.ts",
+    "scripts/**/*.ts",
+    "loadtest.config.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "config.ts", "tests/**/*.ts"],
+  "ignore": [],
+  "ignoreBinaries": [],
+  "ignoreDependencies": [
+    // CSS-only imports , not visible to knip (imported in styles.css)
+    "tw-animate-css",
+    "tailwindcss",
+    "@tailwindcss/typography",
+
+    // Vite / build plugins , referenced in vite.config.ts
+    "@tanstack/router-plugin",
+
+    // Runtime string reference , pino logger uses target: 'pino-pretty'
+    "pino-pretty",
+
+    // Runtime Nitro plugin API , imported in server/plugins/jobs.ts via nitro/runtime
+    "nitro",
+
+    // Pre-installed Radix UI primitives for shadcn-style components
+    // Template users will import these when building their UI
+    "@radix-ui/react-checkbox",
+    "@radix-ui/react-dropdown-menu",
+    "@radix-ui/react-label",
+    "@radix-ui/react-popover",
+    "@radix-ui/react-progress",
+    "@radix-ui/react-scroll-area",
+    "@radix-ui/react-select",
+    "@radix-ui/react-separator",
+    "@radix-ui/react-switch",
+    "@radix-ui/react-tabs",
+    "@radix-ui/react-tooltip"
+  ],
+  "exclude": ["exports", "types", "duplicates", "unresolved"]
+}
