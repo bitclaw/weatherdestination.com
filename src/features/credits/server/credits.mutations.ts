@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { config } from '@/config';
 import { stripe } from '@/features/billing/server/stripe-shared.server';
+import { requireFeatureFlagEnabled } from '@/features/feature-flags/server/feature-flags.server';
 import { getAppUrl } from '@/lib/app-url';
 import { ERROR_CODES } from '@/lib/constants';
 import { db } from '@/lib/db';
@@ -29,6 +30,8 @@ export const buyCreditsCheckoutFn = createServerFn({
       return err(ERROR_CODES.RATE_LIMITED, 'Too many requests');
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(db, 'credits_enabled');
+    if (!flag.ok) return flag;
     if (userCreditsCheckoutLimiter.check(user.id))
       return err(ERROR_CODES.RATE_LIMITED, 'Too many requests');
 

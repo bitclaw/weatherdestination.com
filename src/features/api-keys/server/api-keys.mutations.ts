@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { createApiKeySchema } from '@/features/api-keys/api-keys.constants';
+import { requireFeatureFlagEnabled } from '@/features/feature-flags/server/feature-flags.server';
 import { ERROR_CODES } from '@/lib/constants';
 import { db } from '@/lib/db';
 import { subscriptions } from '@/lib/db/schema';
@@ -26,6 +27,8 @@ export const createApiKeyFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(db, 'api_keys_enabled');
+    if (!flag.ok) return flag;
 
     const sub = await db.query.subscriptions.findFirst({
       where: eq(subscriptions.userId, user.id),
@@ -70,6 +73,8 @@ export const revokeApiKeyFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(db, 'api_keys_enabled');
+    if (!flag.ok) return flag;
 
     return withWriteLock(user.id, () => {
       const userDb = getUserDb(user.id);
@@ -95,6 +100,8 @@ export const deleteApiKeyFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(db, 'api_keys_enabled');
+    if (!flag.ok) return flag;
 
     return withWriteLock(user.id, () => {
       const userDb = getUserDb(user.id);
@@ -124,6 +131,8 @@ export const touchApiKeyFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(db, 'api_keys_enabled');
+    if (!flag.ok) return flag;
     // Keyed by user id, not the default IP fallback: this is an
     // authenticated per-user endpoint, and an IP-keyed limiter lets one
     // noisy user behind a shared NAT/proxy exhaust the budget for every

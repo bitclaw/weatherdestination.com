@@ -4,9 +4,10 @@ import { Header } from '@/components/layout/header';
 import { Main } from '@/components/layout/main';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { Separator } from '@/components/ui/separator';
+import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { SidebarNav } from './sidebar-nav';
 
-const sidebarNavItems = [
+const baseSidebarNavItems = [
   {
     title: 'Profile',
     href: '/dashboard/settings',
@@ -31,15 +32,25 @@ const sidebarNavItems = [
     title: 'Display',
     href: '/dashboard/settings/display',
     icon: <Monitor size={18} />
-  },
-  {
-    title: 'Credits',
-    href: '/dashboard/settings/credits',
-    icon: <Zap size={18} />
   }
 ];
 
 export function SettingsLayout() {
+  // Second, independent registration of the Credits nav entry (the primary
+  // one is sidebar-data.ts, gated via route context) - this one has no
+  // route context readily available, so it reads the flag directly.
+  const { enabled: creditsEnabled } = useFeatureFlag('credits_enabled');
+  const sidebarNavItems = creditsEnabled
+    ? [
+        ...baseSidebarNavItems,
+        {
+          title: 'Credits',
+          href: '/dashboard/settings/credits',
+          icon: <Zap size={18} />
+        }
+      ]
+    : baseSidebarNavItems;
+
   return (
     <>
       <Header fixed>

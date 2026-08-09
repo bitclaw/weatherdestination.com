@@ -2,6 +2,7 @@ import { err } from '@bitclaw/result';
 import { createServerFn } from '@tanstack/react-start';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { requireFeatureFlagEnabled } from '@/features/feature-flags/server/feature-flags.server';
 import { ERROR_CODES } from '@/lib/constants';
 import { db } from '@/lib/db';
 import { notify } from '@/lib/db/notify';
@@ -26,6 +27,8 @@ export const createNoteFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(db, 'notes_enabled');
+    if (!flag.ok) return flag;
 
     const sub = await db.query.subscriptions.findFirst({
       where: eq(subscriptions.userId, user.id),
@@ -75,6 +78,8 @@ export const updateNoteFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(db, 'notes_enabled');
+    if (!flag.ok) return flag;
 
     return withWriteLock(user.id, () => {
       const userDb = getUserDb(user.id);
@@ -100,6 +105,8 @@ export const deleteNoteFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(db, 'notes_enabled');
+    if (!flag.ok) return flag;
 
     return withWriteLock(user.id, () => {
       const userDb = getUserDb(user.id);
@@ -125,6 +132,8 @@ export const togglePinFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(db, 'notes_enabled');
+    if (!flag.ok) return flag;
 
     return withWriteLock(user.id, () => {
       const userDb = getUserDb(user.id);

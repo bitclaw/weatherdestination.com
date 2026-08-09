@@ -1,7 +1,9 @@
 import { err, ok } from '@bitclaw/result';
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
+import { requireFeatureFlagEnabled } from '@/features/feature-flags/server/feature-flags.server';
 import { ERROR_CODES } from '@/lib/constants';
+import { db as sharedDb } from '@/lib/db';
 import { getUserDb, withWriteLock } from '@/lib/db/user-db';
 import { logUserEvent } from '@/lib/db/user-events';
 import { checkUserRateLimit } from '@/lib/db/user-rate-limiter';
@@ -18,6 +20,8 @@ export const createConversationFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(sharedDb, 'ai_chat_enabled');
+    if (!flag.ok) return flag;
 
     return withWriteLock(user.id, () => {
       const db = getUserDb(user.id);
@@ -49,6 +53,8 @@ export const saveMessageFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(sharedDb, 'ai_chat_enabled');
+    if (!flag.ok) return flag;
 
     return withWriteLock(user.id, () => {
       const db = getUserDb(user.id);
@@ -80,6 +86,8 @@ export const deleteConversationFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(sharedDb, 'ai_chat_enabled');
+    if (!flag.ok) return flag;
 
     return withWriteLock(user.id, () => {
       const db = getUserDb(user.id);
@@ -112,6 +120,8 @@ export const updateConversationTitleFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(sharedDb, 'ai_chat_enabled');
+    if (!flag.ok) return flag;
 
     return withWriteLock(user.id, () => {
       const db = getUserDb(user.id);

@@ -1,6 +1,39 @@
-import { afterEach, describe, expect, it, mock, spyOn } from 'bun:test';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  mock,
+  spyOn
+} from 'bun:test';
+import {
+  removeFlag,
+  upsertFlag
+} from '@/features/feature-flags/server/feature-flags.server';
+import { db } from '@/lib/db';
 import { auth } from '@/server/auth';
 import { Route } from './ai-chat';
+
+// The route now gates on the ai_chat_enabled flag before any of the
+// behavior this file exercises (CSRF, auth, payload validation, rate
+// limiting) - flags default off, so without this every test below would
+// see 404 instead of the status it's actually testing for.
+//
+// `db` here is the real shared DB, not an isolated test fixture (this
+// file's pre-existing convention - the route itself uses the real module,
+// no DI seam) - .env.test doesn't override DATABASE_PATH, so this is the
+// same file local dev/production use. Without the afterAll cleanup below,
+// running this suite once leaves ai_chat_enabled permanently ON outside
+// the test run.
+beforeAll(async () => {
+  await upsertFlag(db, 'ai_chat_enabled', true);
+});
+
+afterAll(async () => {
+  await removeFlag(db, 'ai_chat_enabled');
+});
 
 // validateChatMessages itself is covered directly in
 // src/features/ai-chat/server/ai-chat-crud.test.ts:107-155 - this file only

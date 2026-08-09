@@ -13,14 +13,17 @@ import { NavGroup } from './nav-group';
 import { NavUser } from './nav-user';
 import { getSidebarData } from './sidebar-data';
 
-type AppSidebarProps = Pick<AppRouteContext, 'user' | 'isAdmin' | 'plan'>;
+type AppSidebarProps = Pick<
+  AppRouteContext,
+  'user' | 'isAdmin' | 'plan' | 'flags'
+>;
 
-export const AppSidebar = ({ user, isAdmin, plan }: AppSidebarProps) => {
+export const AppSidebar = ({ user, isAdmin, plan, flags }: AppSidebarProps) => {
   // Not suspended: the sidebar shell shouldn't block on this preference -
   // it renders with everything visible until the query resolves.
   const { data } = useQuery(sidebarPreferencesQueryOptions);
   const hidden = new Set(data?.hiddenUrls ?? []);
-  const navGroups = getSidebarData(isAdmin).map(group => ({
+  const navGroups = getSidebarData(isAdmin, flags).map(group => ({
     ...group,
     items: group.items.filter(item => !hidden.has(item.url ?? ''))
   }));

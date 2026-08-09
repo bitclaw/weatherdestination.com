@@ -1,7 +1,8 @@
-import { ok } from '@bitclaw/result';
+import { err, ok, type Result } from '@bitclaw/result';
 import { TTLCache } from '@bitclaw/sqlite/ttl-cache';
 import { randomUUIDv7 } from 'bun';
 import { eq } from 'drizzle-orm';
+import { ERROR_CODES } from '@/lib/constants';
 import type { db as SharedDb } from '@/lib/db';
 import { featureFlags } from '@/lib/db/schema';
 
@@ -41,6 +42,23 @@ export const getFlagEnabled = async (
   const enabled = row?.enabled ?? false;
   flagCache.set(flag, enabled);
   return enabled;
+};
+
+// One-line early check for server functions gating an optional/demo
+// feature - mirrors requireUser()/requireAdmin()'s style (explicit
+// per-function check, not middleware) so it reads the same way at every
+// call site. NOT_FOUND rather than FORBIDDEN: a disabled feature should
+// look absent, not like a permissions wall the caller could reasonably
+// expect to get past.
+export const requireFeatureFlagEnabled = async (
+  db: Db,
+  flag: string
+): Promise<Result<true>> => {
+  const enabled = await getFlagEnabled(db, flag);
+  if (!enabled) {
+    return err(ERROR_CODES.NOT_FOUND, 'This feature is not enabled.');
+  }
+  return ok(true);
 };
 
 export const listFlags = async (db: Db): Promise<FeatureFlagRecord[]> => {

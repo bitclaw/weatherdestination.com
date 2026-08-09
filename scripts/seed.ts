@@ -8,7 +8,18 @@ type FlagSeed = {
   enabled: boolean;
 };
 
-const FLAGS: FlagSeed[] = [{ flag: 'cookie_consent_enabled', enabled: false }];
+const FLAGS: FlagSeed[] = [
+  { flag: 'cookie_consent_enabled', enabled: false },
+  // Demo/example features: default off. They exist to show working
+  // patterns (per-user CRUD, LLM chat, API key issuance, metered credits,
+  // community voting), not to be live for every fresh signup - flip one on
+  // via /dashboard/admin/feature-flags to explore it.
+  { flag: 'notes_enabled', enabled: false },
+  { flag: 'ai_chat_enabled', enabled: false },
+  { flag: 'api_keys_enabled', enabled: false },
+  { flag: 'credits_enabled', enabled: false },
+  { flag: 'feature_requests_enabled', enabled: false }
+];
 
 const now = new Date();
 

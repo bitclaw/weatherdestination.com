@@ -22,21 +22,39 @@ import {
 } from 'lucide-react';
 import type { NavGroup, NavLink } from './types';
 
-export const getSidebarData = (isAdmin: boolean): NavGroup[] => [
+// flags defaults to {} (nothing enabled) rather than being required - two
+// call sites (command-menu.tsx, getFilterableSidebarItems() below) have no
+// route context to read real flags from, and "no flags known" should mean
+// "show none of the gated items", the same fail-safe-false posture the
+// flags system uses everywhere else.
+export const getSidebarData = (
+  isAdmin: boolean,
+  flags: Record<string, boolean> = {}
+): NavGroup[] => [
   {
     title: 'General',
     items: [
       { title: 'Dashboard', url: '/dashboard', icon: Home },
-      { title: 'Chat', url: '/dashboard/chat', icon: MessageSquare },
-      { title: 'API Keys', url: '/dashboard/api-keys', icon: KeyRound },
-      {
-        title: 'Feature Requests',
-        url: '/dashboard/feature-requests',
-        icon: Lightbulb
-      },
+      ...(flags.ai_chat_enabled
+        ? [{ title: 'Chat', url: '/dashboard/chat', icon: MessageSquare }]
+        : []),
+      ...(flags.api_keys_enabled
+        ? [{ title: 'API Keys', url: '/dashboard/api-keys', icon: KeyRound }]
+        : []),
+      ...(flags.feature_requests_enabled
+        ? [
+            {
+              title: 'Feature Requests',
+              url: '/dashboard/feature-requests',
+              icon: Lightbulb
+            }
+          ]
+        : []),
       { title: 'Audit Log', url: '/dashboard/audit-log', icon: ScrollText },
       { title: 'Apps', url: '/dashboard/apps', icon: AppWindow },
-      { title: 'Notes', url: '/dashboard/notes', icon: NotebookPen },
+      ...(flags.notes_enabled
+        ? [{ title: 'Notes', url: '/dashboard/notes', icon: NotebookPen }]
+        : []),
       { title: 'Files', url: '/dashboard/uploads', icon: Upload },
       { title: 'Billing', url: '/dashboard/billing', icon: CreditCard },
       {
@@ -64,11 +82,15 @@ export const getSidebarData = (isAdmin: boolean): NavGroup[] => [
             url: '/dashboard/settings/display',
             icon: Monitor
           },
-          {
-            title: 'Credits',
-            url: '/dashboard/settings/credits',
-            icon: Zap
-          }
+          ...(flags.credits_enabled
+            ? [
+                {
+                  title: 'Credits',
+                  url: '/dashboard/settings/credits',
+                  icon: Zap
+                }
+              ]
+            : [])
         ]
       },
       ...(isAdmin

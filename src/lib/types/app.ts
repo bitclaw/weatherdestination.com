@@ -16,4 +16,5 @@ export type AppRouteContext = {
   trialEndsAt: Date | null;
   isAdmin: boolean;
   onboardingComplete: boolean;
+  flags: Record<string, boolean>;
 };

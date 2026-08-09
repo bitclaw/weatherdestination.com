@@ -2,6 +2,7 @@ import { err } from '@bitclaw/result';
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import { getCachedSubscription } from '@/features/billing/server/billing.server';
+import { requireFeatureFlagEnabled } from '@/features/feature-flags/server/feature-flags.server';
 import {
   createFeatureRequestSchema,
   updateFeatureRequestSchema
@@ -31,6 +32,11 @@ export const createFeatureRequestFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(
+      db,
+      'feature_requests_enabled'
+    );
+    if (!flag.ok) return flag;
     if (createLimiter.check(user.id))
       return err(
         ERROR_CODES.RATE_LIMITED,
@@ -52,6 +58,11 @@ export const updateFeatureRequestFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const adminResult = await requireAdmin();
     if (!adminResult.ok) return adminResult;
+    const flag = await requireFeatureFlagEnabled(
+      db,
+      'feature_requests_enabled'
+    );
+    if (!flag.ok) return flag;
     if (adminWriteLimiter.check(adminResult.data.id))
       return err(
         ERROR_CODES.RATE_LIMITED,
@@ -66,6 +77,11 @@ export const deleteFeatureRequestFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const adminResult = await requireAdmin();
     if (!adminResult.ok) return adminResult;
+    const flag = await requireFeatureFlagEnabled(
+      db,
+      'feature_requests_enabled'
+    );
+    if (!flag.ok) return flag;
     if (adminWriteLimiter.check(adminResult.data.id))
       return err(
         ERROR_CODES.RATE_LIMITED,
@@ -80,6 +96,11 @@ export const toggleFeatureRequestVoteFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(
+      db,
+      'feature_requests_enabled'
+    );
+    if (!flag.ok) return flag;
     if (voteLimiter.check(user.id))
       return err(
         ERROR_CODES.RATE_LIMITED,

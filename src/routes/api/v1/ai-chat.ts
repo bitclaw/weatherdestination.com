@@ -32,6 +32,19 @@ export const Route = createFileRoute('/api/v1/ai-chat')({
           return new Response('Unauthorized', { status: 401 });
         }
 
+        // Not reached through _app.dashboard.chat.tsx's beforeLoad (this is
+        // a direct fetch() endpoint, not a router page), so it needs its
+        // own explicit check rather than inheriting the route guard.
+        // Named flagsDb, not db, so it doesn't shadow the per-block `db`
+        // re-imports further down (credit deduction/refund).
+        const { db: flagsDb } = await import('@/lib/db');
+        const { getFlagEnabled } = await import(
+          '@/features/feature-flags/server/feature-flags.server'
+        );
+        if (!(await getFlagEnabled(flagsDb, 'ai_chat_enabled'))) {
+          return new Response('Not found', { status: 404 });
+        }
+
         // Keyed by user id, not IP - this is an authenticated, paid-API-billed
         // endpoint. IP-keying would let users behind a shared IP (NAT, CGNAT)
         // throttle each other, and let one account bypass the cap entirely by

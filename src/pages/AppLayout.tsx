@@ -14,8 +14,9 @@ const getSidebarCookie = () => {
 export function AppLayout({
   user,
   isAdmin,
-  plan
-}: Pick<AppRouteContext, 'user' | 'isAdmin' | 'plan'>) {
+  plan,
+  flags
+}: Pick<AppRouteContext, 'user' | 'isAdmin' | 'plan' | 'flags'>) {
   const [stoppingImpersonation, setStoppingImpersonation] = useState(false);
   const { data: sessionData } = authClient.useSession();
   const impersonatedBy = (
@@ -24,7 +25,7 @@ export function AppLayout({
 
   return (
     <SidebarProvider defaultOpen={getSidebarCookie()}>
-      <AppSidebar isAdmin={isAdmin} plan={plan} user={user} />
+      <AppSidebar flags={flags} isAdmin={isAdmin} plan={plan} user={user} />
       <SidebarInset className="@container/content has-data-[layout=fixed]:h-svh">
         {impersonatedBy && (
           <div className="flex h-10 items-center justify-between border-b bg-amber-500/10 px-4 text-amber-700 dark:text-amber-400">

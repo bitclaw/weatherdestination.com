@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { ToastProvider } from '@/components/ui/toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { featureFlagsQueryOptions } from '@/features/feature-flags';
 import { ERROR_CODES, PATHS } from '@/lib/constants';
 import type { AppRouteContext } from '@/lib/types';
 import { AppLayout } from '@/pages';
@@ -32,6 +33,17 @@ export const Route = createFileRoute('/_app')({
     if (!result.data.onboardingComplete) {
       throw redirect({ to: PATHS.ONBOARDING });
     }
+
+    // Separate query from bootstrap, deliberately: bootstrap's cache is 10s
+    // server-side / staleTime Infinity client-side (effectively never
+    // refetches for an open tab), which would defeat the point of these
+    // being live-admin-toggleable flags. featureFlagsQueryOptions' own
+    // 30s/60s caching is designed for exactly this.
+    const flagsResult = await context.queryClient.ensureQueryData(
+      featureFlagsQueryOptions
+    );
+    const flags = Object.fromEntries(flagsResult.map(f => [f.flag, f.enabled]));
+
     return {
       user: result.data.user,
       hasAccess: result.data.hasAccess,
@@ -39,7 +51,8 @@ export const Route = createFileRoute('/_app')({
       isTrialing: result.data.isTrialing ?? false,
       trialEndsAt: result.data.trialEndsAt ?? null,
       isAdmin: result.data.isAdmin ?? false,
-      onboardingComplete: result.data.onboardingComplete
+      onboardingComplete: result.data.onboardingComplete,
+      flags
     };
   },
   // TooltipProvider/ToastProvider live here, not in __root - they're only
@@ -49,11 +62,12 @@ export const Route = createFileRoute('/_app')({
   // with both unconditionally, pulling their radix-ui modules into every
   // public page's preload list for no reason.
   component: () => {
-    const { user, isAdmin, plan } = Route.useRouteContext() as AppRouteContext;
+    const { user, isAdmin, plan, flags } =
+      Route.useRouteContext() as AppRouteContext;
     return (
       <TooltipProvider>
         <ToastProvider>
-          <AppLayout isAdmin={isAdmin} plan={plan} user={user} />
+          <AppLayout flags={flags} isAdmin={isAdmin} plan={plan} user={user} />
         </ToastProvider>
       </TooltipProvider>
     );
