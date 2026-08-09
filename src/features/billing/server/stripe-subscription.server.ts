@@ -34,12 +34,7 @@ export const handleSubscriptionUpdate = async (
   if (!customerId) return;
 
   const isActive = isSubscriptionActive(sub);
-  const trialEndsAt = parseTrialEnd(
-    (sub as unknown as Record<string, unknown>).trial_end as
-      | number
-      | null
-      | undefined
-  );
+  const trialEndsAt = parseTrialEnd(sub.trial_end);
   const now = new Date();
   // Sync callback , bun:sqlite's native transaction() wrapper doesn't await
   // async callbacks (COMMIT fires at the first internal await, with no

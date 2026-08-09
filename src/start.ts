@@ -158,6 +158,7 @@ const loggerMiddleware = createMiddleware().server(
       (await getLog()).info({
         method: request.method,
         path,
+        // weak-type-ok: middleware context has no exported requestId type from the framework
         requestId: (context as unknown as { requestId?: string }).requestId
       });
     }

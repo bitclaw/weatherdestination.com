@@ -184,28 +184,17 @@ export function FeatureRequestsTable({
             {
               columnId: 'status',
               title: 'Status',
-              options: statusOptions as unknown as {
-                label: string;
-                value: string;
-                icon?: React.ComponentType<{ className?: string }>;
-              }[]
+              options: statusOptions
             },
             {
               columnId: 'priority',
               title: 'Priority',
-              options: priorityOptions as unknown as {
-                label: string;
-                value: string;
-                icon?: React.ComponentType<{ className?: string }>;
-              }[]
+              options: priorityOptions
             },
             {
               columnId: 'category',
               title: 'Category',
-              options: categoryOptions as unknown as {
-                label: string;
-                value: string;
-              }[]
+              options: categoryOptions
             }
           ]}
           searchPlaceholder="Search requests..."

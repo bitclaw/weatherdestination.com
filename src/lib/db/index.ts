@@ -6,6 +6,7 @@ import { drizzle } from 'drizzle-orm/bun-sqlite';
 import * as schema from './schema';
 import { sqlLog } from './sql-logger';
 
+// weak-type-ok: standard globalThis-extension idiom, no structural TS way to type this
 const globalForDb = globalThis as unknown as {
   metaDb: ReturnType<typeof drizzle<typeof schema>> | undefined;
   metaSqlite: Database | undefined;

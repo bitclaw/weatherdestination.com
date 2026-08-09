@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 type DataTableFacetedFilterProps<TData, TValue> = {
   column?: Column<TData, TValue>;
   title?: string;
-  options: {
+  options: readonly {
     label: string;
     value: string;
     icon?: React.ComponentType<{ className?: string }>;

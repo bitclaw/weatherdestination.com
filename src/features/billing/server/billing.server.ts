@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import type * as schema from '@/lib/db/schema';
 import { subscriptions } from '@/lib/db/schema';
 
+// weak-type-ok: standard globalThis-extension idiom, no structural TS way to type this
 const globalForBilling = globalThis as unknown as {
   _subCache?: TTLCache<SubscriptionRow | null>;
 };

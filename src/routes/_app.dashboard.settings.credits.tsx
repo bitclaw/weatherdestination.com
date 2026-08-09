@@ -1,13 +1,16 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
+import { z } from 'zod';
 import { creditsQueryOptions } from '@/features/credits';
 import { PATHS } from '@/lib/constants';
 import type { AppRouteContext } from '@/lib/types';
 import { CreditsPage } from '@/pages/settings/credits-page';
 
+const searchSchema = z.object({
+  success: z.preprocess(v => v === 'true' || v === true, z.boolean())
+});
+
 export const Route = createFileRoute('/_app/dashboard/settings/credits')({
-  validateSearch: (s: Record<string, unknown>) => ({
-    success: s.success === 'true' || s.success === true
-  }),
+  validateSearch: searchSchema,
   loader: async ({ context }) => {
     const ctx = context as AppRouteContext;
     if (!ctx.flags.credits_enabled) throw redirect({ to: PATHS.DASHBOARD });

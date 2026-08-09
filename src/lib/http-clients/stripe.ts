@@ -12,6 +12,7 @@ export const stripe = new Proxy({} as Stripe, {
         }
       );
     }
+    // weak-type-ok: Proxy get trap needs symbol-keyed indexing Stripe's own type doesn't support
     return (_stripe as unknown as Record<string | symbol, unknown>)[prop];
   }
 });

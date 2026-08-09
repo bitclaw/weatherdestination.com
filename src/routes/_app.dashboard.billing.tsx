@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { z } from 'zod';
 import { config } from '@/config';
 import {
   oneTimePurchaseQueryOptions,
@@ -7,19 +8,22 @@ import {
 import { BillingPage } from '@/features/billing/pages';
 import type { AppRouteContext } from '@/lib/types';
 
+// Leave undefined rather than coercing to `false` when absent: a validated
+// value that differs from the raw URL (nothing there vs. an explicit
+// `false`) makes TanStack Router issue a canonicalizing redirect to write
+// the default back into the URL - a full extra round trip on every visit to
+// a bare /dashboard/billing link. See runmist's docs/runmist/performance.md
+// cx33 load test, which measured this exact route ~3-4x slower than
+// everything else because of it.
+const toTrueOrUndefined = (v: unknown) =>
+  v === 'true' || v === true ? true : undefined;
+const searchSchema = z.object({
+  success: z.preprocess(toTrueOrUndefined, z.literal(true).optional()),
+  canceled: z.preprocess(toTrueOrUndefined, z.literal(true).optional())
+});
+
 export const Route = createFileRoute('/_app/dashboard/billing')({
-  validateSearch: (s: Record<string, unknown>) => ({
-    // Leave undefined rather than coercing to `false` when absent: a
-    // validated value that differs from the raw URL (nothing there vs.
-    // an explicit `false`) makes TanStack Router issue a canonicalizing
-    // redirect to write the default back into the URL - a full extra
-    // round trip on every visit to a bare /dashboard/billing link. See
-    // runmist's docs/runmist/performance.md cx33 load test, which
-    // measured this exact route ~3-4x slower than everything else
-    // because of it.
-    success: s.success === 'true' || s.success === true ? true : undefined,
-    canceled: s.canceled === 'true' || s.canceled === true ? true : undefined
-  }),
+  validateSearch: searchSchema,
   loader: async ({ context }) => {
     // Prefetch the query the page will actually suspend on: the one_time
     // page reads oneTimePurchaseQueryOptions, not the subscription query.

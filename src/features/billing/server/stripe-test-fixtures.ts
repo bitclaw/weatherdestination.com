@@ -17,11 +17,13 @@ export const makeSession = (
     line_items: null,
     amount_total: 999,
     currency: 'usd'
+    // weak-type-ok: partial mock, only fields the handler under test reads
   }) as unknown as Stripe.Checkout.Session;
 
 export const makeStripeSub = (
   customerId: string,
   status: string,
+  // weak-type-ok: caller-supplied override bag for a partial mock, shape varies per test
   extra?: Record<string, unknown>
 ) =>
   ({
@@ -29,6 +31,7 @@ export const makeStripeSub = (
     customer: customerId,
     status,
     ...extra
+    // weak-type-ok: partial mock, only fields the handler under test reads
   }) as unknown as Stripe.Subscription;
 
 export const makeInvoice = (customerId: string, subscriptionId?: string) =>
@@ -37,6 +40,7 @@ export const makeInvoice = (customerId: string, subscriptionId?: string) =>
     parent: {
       subscription_details: { subscription: subscriptionId ?? 'sub_test' }
     }
+    // weak-type-ok: partial mock, only fields the handler under test reads
   }) as unknown as Stripe.Invoice;
 
 export const makeCharge = (
@@ -52,6 +56,7 @@ export const makeCharge = (
     customer: override.customerId ?? 'cus_test',
     refunded: override.refunded ?? true,
     amount_refunded: override.amountRefunded ?? 500
+    // weak-type-ok: partial mock, only fields the handler under test reads
   }) as unknown as Stripe.Charge;
 
 export const makeDispute = (
@@ -65,4 +70,5 @@ export const makeDispute = (
     payment_intent: override.paymentIntentId ?? null,
     charge: override.chargeId ?? 'ch_test',
     amount: override.amount ?? 500
+    // weak-type-ok: partial mock, only fields the handler under test reads
   }) as unknown as Stripe.Dispute;

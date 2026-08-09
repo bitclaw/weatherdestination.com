@@ -10,10 +10,9 @@ export const Route = createFileRoute('/api/v1/stripe-webhook')({
   server: {
     handlers: {
       POST: async ({ request, context }) => {
-        const requestId =
-          (
-            context as unknown as Record<string, unknown>
-          )?.requestId?.toString() ?? randomUUIDv7();
+        // weak-type-ok: server handler context has no exported requestId type from the framework
+        const ctxBag = context as unknown as Record<string, unknown>;
+        const requestId = ctxBag?.requestId?.toString() ?? randomUUIDv7();
         const log = createLogger({ requestId });
 
         const signature = request.headers.get('stripe-signature') ?? '';

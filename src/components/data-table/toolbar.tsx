@@ -13,7 +13,7 @@ type DataTableToolbarProps<TData> = {
   filters?: {
     columnId: string;
     title: string;
-    options: {
+    options: readonly {
       label: string;
       value: string;
       icon?: React.ComponentType<{ className?: string }>;

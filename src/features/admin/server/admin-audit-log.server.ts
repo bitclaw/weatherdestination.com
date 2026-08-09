@@ -17,6 +17,7 @@ export async function recordAdminAuditEvent(
     type: string;
     adminUserId: string;
     targetUserId?: string;
+    // weak-type-ok: audit-log payload is heterogeneous by design, stored opaque
     payload?: Record<string, unknown>;
   }
 ): Promise<void> {

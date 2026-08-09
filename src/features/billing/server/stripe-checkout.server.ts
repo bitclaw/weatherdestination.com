@@ -124,12 +124,7 @@ const handleSubscriptionCheckout = async (
 
   const subStatus = stripeSub?.status ?? 'active';
   const subPeriodEnd = stripeSub ? getPeriodEnd(stripeSub) : null;
-  const subTrialEndsAt = parseTrialEnd(
-    (stripeSub as unknown as Record<string, unknown>)?.trial_end as
-      | number
-      | null
-      | undefined
-  );
+  const subTrialEndsAt = parseTrialEnd(stripeSub?.trial_end);
   // session.line_items isn't expanded in a standard checkout.session.completed
   // webhook payload, so it's null in production - the retrieved stripeSub
   // (which has real items data) is the reliable source. Fall back to

@@ -58,6 +58,7 @@ export function loadTurnstileScript(): Promise<void> {
 }
 
 export function getTurnstileApi(): TurnstileApi | null {
+  // weak-type-ok: reading a global injected by the third-party Turnstile script tag
   return ((window as unknown as Record<string, unknown>).turnstile ??
     null) as TurnstileApi | null;
 }

@@ -5,7 +5,7 @@
         db.generate db.migrate db.seed db.studio clean ci knip favicons \
         mail.up mail.down mail.logs loadtest.seed check-error-codes \
         check-barrel-pages check-prefetch-bare check-webhook-idempotency \
-        check-client-bundle-leaks check-ratelimit-keying stripe.setup \
+        check-client-bundle-leaks check-ratelimit-keying check-weak-types stripe.setup \
         github.oauth.setup
 
 help:
@@ -140,7 +140,7 @@ ci: ## Run full CI pipeline locally (build first so generated content is availab
 	# prepare() fails with "no such table". A local dev DB already has
 	# migrations applied, which is why this only ever broke in CI.
 	@bun run db:migrate
-	@$(MAKE) lint knip test check-error-codes check-barrel-pages check-prefetch-bare check-webhook-idempotency check-client-bundle-leaks check-boot check-ratelimit-keying check-exact-deps
+	@$(MAKE) lint knip test check-error-codes check-barrel-pages check-prefetch-bare check-webhook-idempotency check-client-bundle-leaks check-boot check-ratelimit-keying check-weak-types check-exact-deps
 
 check-exact-deps: ## Fail if package.json has any non-exact version specifier (^, ~, etc.)
 	@bun run scripts/check-exact-deps.ts
@@ -243,6 +243,36 @@ check-ratelimit-keying: ## Fail if a rate limiter's .check() runs unkeyed after 
 	done; \
 	if [ "$$ok" = "0" ]; then \
 	  echo "❌ Rate limiter .check() called unkeyed after the caller's id was already resolved — key it by user.id/adminResult.data.id (see touchApiKeyFn or admin.mutations.ts's requireRateLimitedAdmin for the pattern)"; \
+	  exit 1; \
+	fi
+
+# `as unknown as X` / `Record<string, unknown>` are casts, not parses — they
+# bypass strict tsconfig entirely. Legitimate uses exist (globalThis-extension
+# idiom, Proxy get traps, heterogeneous audit-log payloads, partial test
+# mocks) — those get a same-line-or-line-above `// weak-type-ok: <reason>`
+# comment instead of a rewrite. Line-adjacent, not file-level: a justification
+# elsewhere in a large file must not exempt an unrelated unjustified cast.
+check-weak-types: ## Fail on `as unknown as` / Record<string, unknown> without a weak-type-ok: justification
+	@hit=$$(awk ' \
+	    /as unknown as/ && FILENAME !~ /\.test\.ts$$/ { \
+	      if ($$0 !~ /weak-type-ok:/ && prev !~ /weak-type-ok:/) print FILENAME ":" FNR ": " $$0; \
+	    } \
+	    { prev = $$0 } \
+	  ' $$(grep -rl --include="*.ts" --include="*.tsx" "as unknown as" src/ 2>/dev/null)); \
+	if [ -n "$$hit" ]; then \
+	  echo "❌ 'as unknown as' cast without a // weak-type-ok: <reason> on this line or the line above:"; \
+	  echo "$$hit"; \
+	  exit 1; \
+	fi
+	@hit=$$(awk ' \
+	    /Record<string[^,]*, unknown>/ && FILENAME !~ /\.test\.ts$$/ { \
+	      if ($$0 !~ /weak-type-ok:/ && prev !~ /weak-type-ok:/) print FILENAME ":" FNR ": " $$0; \
+	    } \
+	    { prev = $$0 } \
+	  ' $$(grep -rlE --include="*.ts" --include="*.tsx" "Record<string[^,]*, unknown>" src/ 2>/dev/null)); \
+	if [ -n "$$hit" ]; then \
+	  echo "❌ Record<string, unknown> without a // weak-type-ok: <reason> on this line or the line above:"; \
+	  echo "$$hit"; \
 	  exit 1; \
 	fi
 

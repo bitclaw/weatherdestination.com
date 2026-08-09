@@ -64,11 +64,7 @@ export function AuditLogTable({ data }: Props) {
           {
             columnId: 'type',
             title: 'Event type',
-            options: eventTypeOptions as unknown as {
-              label: string;
-              value: string;
-              icon?: React.ComponentType<{ className?: string }>;
-            }[]
+            options: eventTypeOptions
           }
         ]}
         searchPlaceholder="Search events..."

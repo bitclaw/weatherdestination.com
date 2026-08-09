@@ -93,15 +93,12 @@ export const reconcileBillingSubscriptions = async (
     }
 
     const isActive = isSubscriptionActive(stripeSub);
-    const rawSub = stripeSub as unknown as Record<string, unknown>;
     const activePriceId = stripeSub.items?.data[0]?.price?.id;
     const derivedPlan: PlanId | 'free' = isActive
       ? (getPlanIdForPriceId(activePriceId) ?? 'free')
       : 'free';
     const derivedPeriodEnd = getPeriodEnd(stripeSub);
-    const trialEndsAt = parseTrialEnd(
-      rawSub.trial_end as number | null | undefined
-    );
+    const trialEndsAt = parseTrialEnd(stripeSub.trial_end);
 
     const now = new Date();
 

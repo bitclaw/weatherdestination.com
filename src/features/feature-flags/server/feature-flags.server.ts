@@ -8,6 +8,7 @@ import { featureFlags } from '@/lib/db/schema';
 
 type Db = typeof SharedDb;
 
+// weak-type-ok: standard globalThis-extension idiom, no structural TS way to type this
 const globalForFlags = globalThis as unknown as {
   _flagCache?: TTLCache<boolean>;
 };

@@ -114,11 +114,7 @@ export function ApiKeysTable({ data }: Props) {
             {
               columnId: 'status',
               title: 'Status',
-              options: statusOptions as unknown as {
-                label: string;
-                value: string;
-                icon?: React.ComponentType<{ className?: string }>;
-              }[]
+              options: statusOptions
             }
           ]}
           searchPlaceholder="Search keys..."
