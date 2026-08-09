@@ -132,6 +132,14 @@ ci: ## Run full CI pipeline locally (build first so generated content is availab
 	# runner has neither, so the placeholder must be explicit here, matching
 	# the Dockerfile's own build-stage placeholder.
 	@NODE_ENV=production BETTER_AUTH_SECRET=ci-build-secret-not-used-in-production-placeholder bun run build
+	# ai-chat.test.ts seeds/clears a real flag row against the shared DB
+	# module (@/lib/db), not the migrated in-memory makeTestSharedDb()
+	# fixture other tests use - deliberate, see CLAUDE.md "Auth" section.
+	# On a fresh checkout data/meta.db doesn't exist yet; without a migrate
+	# here it gets auto-created empty on first open and upsertFlag's
+	# prepare() fails with "no such table". A local dev DB already has
+	# migrations applied, which is why this only ever broke in CI.
+	@bun run db:migrate
 	@$(MAKE) lint knip test check-error-codes check-barrel-pages check-prefetch-bare check-webhook-idempotency check-client-bundle-leaks check-boot check-ratelimit-keying check-exact-deps
 
 check-exact-deps: ## Fail if package.json has any non-exact version specifier (^, ~, etc.)
