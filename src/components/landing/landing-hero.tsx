@@ -19,7 +19,7 @@ const item = {
 
 export function LandingHero() {
   return (
-    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-16 text-center">
+    <section className="relative flex flex-col items-center justify-center overflow-hidden px-6 py-24 text-center md:py-32">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10"
