@@ -20,6 +20,10 @@ export function getPricingGridClass(
 export function LandingPricing() {
   const [isYearly, setIsYearly] = useState(false);
   const isOneTime = config.billing.mode === 'one_time';
+
+  // No plans configured yet - the compare tool ships free in v1. Render
+  // nothing rather than an empty pricing grid.
+  if (config.stripe.plans.length === 0) return null;
   const trialDays =
     !isOneTime && config.billing.trialDays && config.billing.trialDays > 0
       ? config.billing.trialDays

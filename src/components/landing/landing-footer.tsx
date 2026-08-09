@@ -32,9 +32,9 @@ export function LandingFooter() {
               <li>
                 <Link
                   className="hover:text-primary transition-colors"
-                  to="/pricing"
+                  to="/compare"
                 >
-                  Pricing
+                  Compare
                 </Link>
               </li>
               <li>

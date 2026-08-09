@@ -1,44 +1,44 @@
 import * as Accordion from '@radix-ui/react-accordion';
 import { AnimatePresence, MotionConfig, motion, useInView } from 'motion/react';
 import { useRef, useState } from 'react';
-import { config } from '@/config';
 import { cn } from '@/lib/cn';
 
 const faqs = [
   {
-    id: 'what-do-i-get',
-    question: 'What do I get with this template?',
-    answer: `A production-ready TanStack Start app with OTP auth (better-auth), Stripe billing, per-user SQLite databases, a blog with MDX, and a landing page. Everything wired together and ready to customize for ${config.appName}.`
+    id: 'is-it-free',
+    question: 'Is this free?',
+    answer:
+      'Yes. Comparing cities is free and doesn’t require an account. We may add a paid, more detailed relocation report later, but the comparison tool itself stays free.'
   },
   {
-    id: 'per-user-sqlite',
-    question: 'Why per-user SQLite instead of a shared database?',
+    id: 'which-cities',
+    question: 'Which cities are covered?',
     answer:
-      'Each user gets their own isolated SQLite file. No cross-user data leaks, no shared table contention, easy per-user backups. It works great for B2C apps where user data is independent.'
+      '82 US cities spanning every region, from the Pacific Northwest to the Southeast, chosen to give a real spread of climate risk profiles rather than just the biggest metros.'
   },
   {
-    id: 'own-database',
-    question: 'Can I use my own database for the user data?',
+    id: 'data-source',
+    question: 'Where does the data come from?',
     answer:
-      'Yes. The per-user SQLite pattern is in src/db/user-db.ts and user-migrations.ts , swap it out for any storage you like. The auth and billing layers are independent.'
+      "Weather and climate normals come from NOAA's Climate Data Online API. Risk scores, cost of living, and air quality are curated per city and refreshed periodically."
   },
   {
-    id: 'billing',
-    question: 'How does billing work?',
+    id: 'risk-scores',
+    question: 'How are the risk scores calculated?',
     answer:
-      'Stripe Checkout handles payment. A webhook sets hasAccess: true on the user record. That one boolean is all you need to gate Pro features. No complex plan enforcement , you add limits yourself.'
+      'Each city gets a 0-100 score for wildfire, flood, hurricane, heat wave, and drought risk, where higher means greater risk. These are directional estimates for comparison, not a substitute for local disclosures or insurance underwriting.'
   },
   {
-    id: 'bun',
-    question: 'Does this work with Bun?',
+    id: 'account-needed',
+    question: 'Do I need to create an account?',
     answer:
-      'Yes, Bun is the required runtime. The bun:sqlite driver is used for all database connections , it is 3-6x faster than better-sqlite3.'
+      "No. Comparisons run without signing up. Leave your email on a comparison page if you'd like to hear when deeper, downloadable reports launch."
   },
   {
-    id: 'b2b',
-    question: 'Can I use this for a B2B/team product?',
+    id: 'more-cities',
+    question: 'Will more cities be added?',
     answer:
-      'The template ships as B2C (one user, no teams). The CLAUDE.md documents the upgrade path to a workspace + multi-session model when you need isolated environments per project.'
+      "That's the plan. The 82-city list is a starting point, and coverage will grow based on demand."
   }
 ];
 

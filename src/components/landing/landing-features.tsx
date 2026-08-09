@@ -1,43 +1,43 @@
-import { CreditCard, Database, FileText, Key, Shield, Zap } from 'lucide-react';
+import { CloudSun, DollarSign, Flame, Table2, Waves, Wind } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AnimateIn } from '@/components/ui/animate-in';
 
 const features = [
   {
-    icon: Key,
-    title: 'OTP Auth + Multi-session',
+    icon: Flame,
+    title: 'Climate risk scores',
     description:
-      'Passwordless login via email OTP. Users stay signed in across devices with multi-session support built in.'
+      'Wildfire, flood, hurricane, heat wave, and drought risk for every city, scored 0-100 so you can compare at a glance.'
   },
   {
-    icon: CreditCard,
-    title: 'Stripe billing, done right',
+    icon: CloudSun,
+    title: 'Sunshine and cloud cover',
     description:
-      'Checkout, customer portal, and webhook handling. One boolean: hasAccess: tells you everything you need.'
+      'Average sunshine hours and cloud cover per city, sourced from NOAA climate normals, not marketing copy.'
   },
   {
-    icon: Database,
-    title: 'Per-user SQLite',
+    icon: Wind,
+    title: 'Air quality',
     description:
-      'Every user gets their own isolated SQLite database. No shared schema, no cross-user leaks, no complex row-level security.'
+      'Air Quality Index alongside every comparison, so you know what you’re actually breathing before you move.'
   },
   {
-    icon: Zap,
-    title: 'TanStack Start',
+    icon: DollarSign,
+    title: 'Cost of living',
     description:
-      'Full-stack React with server functions, file-based routing, and TanStack Query. The modern way to build.'
+      'Cost of living index next to the climate data, because the sunniest city doesn’t matter if you can’t afford it.'
   },
   {
-    icon: Shield,
-    title: 'Drizzle ORM',
+    icon: Table2,
+    title: 'Compare up to 5 cities',
     description:
-      'Type-safe SQL with Drizzle for the metadata store. No Prisma engine binary. Native bun:sqlite performance.'
+      'Pick your shortlist and see every metric side by side in one table, instead of a dozen open browser tabs.'
   },
   {
-    icon: FileText,
-    title: 'Blog + MDX',
+    icon: Waves,
+    title: 'Free, no account needed',
     description:
-      'Content collections with MDX support. Write posts in Markdown, get a fast statically-rendered blog.'
+      'Run comparisons without signing up. We only ask for your email if you want to hear about deeper reports later.'
   }
 ];
 
@@ -47,11 +47,11 @@ export function LandingFeatures() {
       <div className="mx-auto max-w-6xl">
         <AnimateIn className="text-center">
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-            Everything you need to ship
+            Everything you need to compare
           </h2>
           <p className="text-muted-foreground mx-auto mt-4 max-w-2xl">
-            Stop rebuilding auth and billing for every project. Start with a
-            solid foundation and build the thing only you can build.
+            Climate risk and quality-of-life data for 82 US cities, pulled from
+            NOAA and refreshed regularly.
           </p>
         </AnimateIn>
 

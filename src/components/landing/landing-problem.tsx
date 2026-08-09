@@ -36,22 +36,22 @@ export function LandingProblem() {
       <div className="mx-auto max-w-5xl">
         <AnimateIn className="text-center">
           <h2 className="mx-auto max-w-3xl text-3xl font-bold tracking-tight md:text-4xl">
-            80% of SaaS projects fail because founders run out of time before
-            launch
+            Picking a place to live shouldn't be a guess
           </h2>
           <p className="text-muted-foreground mx-auto mt-4 max-w-xl text-lg">
-            Auth, billing, email, database: you spend weeks on plumbing before
-            writing a single line of product logic.
+            Wildfire zones, flood plains, hurricane paths, gray winters: the
+            risk is real, but it's scattered across a dozen sites you'd never
+            think to check before moving or booking a long stay.
           </p>
         </AnimateIn>
 
         <AnimateIn className="mt-16" delay={0.15}>
           <div className="flex flex-col items-center justify-center gap-6 md:flex-row md:items-start">
-            <Step emoji="🧑‍💻" text="Weeks building auth & billing" />
+            <Step emoji="🤔" text="Pick a city off vibes and Instagram" />
             <Arrow flip />
-            <Step emoji="😮‍💨" text="Burned out before launch" />
+            <Step emoji="🔥" text="Discover the wildfire risk after moving" />
             <Arrow />
-            <Step emoji="😔" text="Project abandoned" />
+            <Step emoji="😞" text="Stuck somewhere that doesn't fit" />
           </div>
         </AnimateIn>
       </div>

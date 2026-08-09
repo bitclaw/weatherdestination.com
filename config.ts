@@ -110,57 +110,11 @@ const domainName = 'weatherdestination.com';
 // import.meta.env is Vite-only , undefined in Node/Playwright/Bun script contexts
 const _env: Record<string, string | undefined> = import.meta.env ?? {};
 
-const stripePlans: StripePlan[] = [
-  {
-    id: 'solo',
-    name: 'Solo',
-    description: 'Perfect for indie hackers and solo founders.',
-    features: ['10 notes', 'Email support', 'API access', 'Export data'],
-    recurring: {
-      priceId: _env.VITE_STRIPE_SOLO_PRICE_ID ?? '',
-      price: 9,
-      yearlyPriceId: _env.VITE_STRIPE_SOLO_YEARLY_PRICE_ID ?? '',
-      yearlyPrice: 90
-    }
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    description: 'Everything you need to grow your SaaS.',
-    popular: true,
-    features: [
-      'Unlimited notes',
-      'Priority support',
-      'API access',
-      'Export data'
-    ],
-    recurring: {
-      priceId: _env.VITE_STRIPE_PRO_PRICE_ID ?? '',
-      price: 29,
-      yearlyPriceId: _env.VITE_STRIPE_PRO_YEARLY_PRICE_ID ?? '',
-      yearlyPrice: 290
-    },
-    oneTime: { priceId: _env.VITE_STRIPE_ONE_TIME_PRICE_ID ?? '', price: 149 }
-  },
-  {
-    id: 'team',
-    name: 'Team',
-    description: 'For teams that need collaboration and scale.',
-    features: [
-      'Unlimited notes',
-      'Dedicated support',
-      'API access',
-      'Export data',
-      'Team seats'
-    ],
-    recurring: {
-      priceId: _env.VITE_STRIPE_TEAM_PRICE_ID ?? '',
-      price: 79,
-      yearlyPriceId: _env.VITE_STRIPE_TEAM_YEARLY_PRICE_ID ?? '',
-      yearlyPrice: 790
-    }
-  }
-];
+// No plans yet: v1 ships the city comparison tool free. Add a plan here
+// (and flip billing.mode to 'one_time') once the paid relocation report
+// exists to sell - see src/components/landing/landing-pricing.tsx, which
+// renders nothing while this stays empty.
+const stripePlans: StripePlan[] = [];
 
 export const config = {
   appName: 'WeatherDestination',
@@ -188,7 +142,7 @@ export const config = {
   theme: {
     defaultMode: 'light',
     lightThemeColor: '#ffffff',
-    darkThemeColor: '#0a0a0a'
+    darkThemeColor: '#0b1520'
   },
 
   seo: {

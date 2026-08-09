@@ -29,9 +29,9 @@ export function LandingMobileNav({ onClose }: LandingMobileNavProps) {
         <Link
           className="text-muted-foreground hover:text-primary"
           onClick={onClose}
-          to="/pricing"
+          to="/compare"
         >
-          Pricing
+          Compare
         </Link>
         <Link
           className="text-muted-foreground hover:text-primary"

@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { LandingHero } from './landing-hero';
 import { LandingNavbar } from './landing-navbar';
 import { LandingSectionSkeleton } from './landing-section-skeleton';
-import { LandingSocialProof } from './landing-social-proof';
 
 // Lazy: below-the-fold sections shouldn't block initial JS parse/hydrate.
 // Heights are best-effort estimates matched to each section's typical
@@ -19,11 +18,6 @@ const LandingWithWithout = lazy(() =>
 );
 const LandingFeatures = lazy(() =>
   import('./landing-features').then(m => ({ default: m.LandingFeatures }))
-);
-const LandingTestimonials = lazy(() =>
-  import('./landing-testimonials').then(m => ({
-    default: m.LandingTestimonials
-  }))
 );
 const LandingPricing = lazy(() =>
   import('./landing-pricing').then(m => ({ default: m.LandingPricing }))
@@ -44,7 +38,6 @@ export function LandingPage() {
       <LandingNavbar />
       <main>
         <LandingHero />
-        <LandingSocialProof />
         <Suspense fallback={<LandingSectionSkeleton height={450} />}>
           <LandingProblem />
         </Suspense>
@@ -53,9 +46,6 @@ export function LandingPage() {
         </Suspense>
         <Suspense fallback={<LandingSectionSkeleton height={550} />}>
           <LandingFeatures />
-        </Suspense>
-        <Suspense fallback={<LandingSectionSkeleton height={600} />}>
-          <LandingTestimonials />
         </Suspense>
         <Suspense fallback={<LandingSectionSkeleton height={700} />}>
           <LandingPricing />

@@ -77,7 +77,8 @@ export type AdminAnalytics = {
 // trend chart.
 export const snapshotCurrentMonthMrr = async (
   db: Db,
-  now: Date = new Date()
+  now: Date = new Date(),
+  plans: readonly StripePlan[] = config.stripe.plans
 ): Promise<void> => {
   const activeSubs = await db
     .select({
@@ -88,7 +89,7 @@ export const snapshotCurrentMonthMrr = async (
     .where(eq(subscriptions.status, 'active'));
 
   const mrr = activeSubs.reduce(
-    (sum, s) => sum + monthlyRevenueCentsForSub(s),
+    (sum, s) => sum + monthlyRevenueCentsForSub(s, plans),
     0
   );
   const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;

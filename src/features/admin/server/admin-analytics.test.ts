@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { config } from '@/config';
+import type { StripePlan } from '@/config';
 import {
   mrrSnapshots,
   payments,
@@ -14,8 +14,35 @@ import {
   snapshotCurrentMonthMrr
 } from './admin-analytics.server';
 
-const soloPlan = config.stripe.plans.find(p => p.id === 'solo')!;
-const proPlan = config.stripe.plans.find(p => p.id === 'pro')!;
+// Fixture plans, independent of config.stripe.plans - this project ships
+// with zero plans configured (city comparison is free in v1), but the MRR
+// math this suite exercises is generic and shouldn't depend on what's
+// currently on sale.
+const soloPlan: StripePlan = {
+  id: 'solo',
+  name: 'Solo',
+  description: 'Fixture plan for analytics tests',
+  features: [],
+  recurring: {
+    priceId: 'price_solo_monthly',
+    price: 9,
+    yearlyPriceId: 'price_solo_yearly',
+    yearlyPrice: 90
+  }
+};
+const proPlan: StripePlan = {
+  id: 'pro',
+  name: 'Pro',
+  description: 'Fixture plan for analytics tests',
+  features: [],
+  recurring: {
+    priceId: 'price_pro_monthly',
+    price: 29,
+    yearlyPriceId: 'price_pro_yearly',
+    yearlyPrice: 290
+  }
+};
+const plansFixture: StripePlan[] = [soloPlan, proPlan];
 
 describe('queryAdminAnalytics', () => {
   it('returns zeroed metrics on an empty db', async () => {
@@ -44,7 +71,7 @@ describe('queryAdminAnalytics', () => {
         makeSubscription(u2.id, { plan: 'pro', status: 'active' })
       ]);
 
-    const result = await queryAdminAnalytics(db);
+    const result = await queryAdminAnalytics(db, new Date(), plansFixture);
 
     expect(result.overview.mrrCents).toBe(
       Math.round(soloPlan.recurring!.price * 100) +
@@ -54,21 +81,6 @@ describe('queryAdminAnalytics', () => {
   });
 
   it('prorates a yearly-billed subscription to 1/12 for MRR', async () => {
-    // config.stripe.plans has empty price ids under bun test (env unset) -
-    // inject a fixture with real, distinguishable monthly/yearly price ids
-    // so the yearly-vs-monthly match in monthlyRevenueCentsForSub is
-    // actually exercised instead of matching two empty strings.
-    const plansFixture = [
-      {
-        ...proPlan,
-        recurring: {
-          ...proPlan.recurring!,
-          priceId: 'price_pro_monthly',
-          yearlyPriceId: 'price_pro_yearly'
-        }
-      }
-    ];
-
     const db = makeTestSharedDb();
     const u = makeUser();
     await db.insert(users).values(u);
@@ -289,7 +301,7 @@ describe('snapshotCurrentMonthMrr', () => {
       .values(makeSubscription(u.id, { plan: 'solo', status: 'active' }));
 
     const now = new Date('2026-03-15T00:00:00Z');
-    await snapshotCurrentMonthMrr(db, now);
+    await snapshotCurrentMonthMrr(db, now, plansFixture);
 
     const rows = await db.select().from(mrrSnapshots);
     expect(rows).toHaveLength(1);
@@ -307,14 +319,14 @@ describe('snapshotCurrentMonthMrr', () => {
       .values(makeSubscription(u.id, { plan: 'solo', status: 'active' }));
 
     const now = new Date('2026-03-15T00:00:00Z');
-    await snapshotCurrentMonthMrr(db, now);
+    await snapshotCurrentMonthMrr(db, now, plansFixture);
 
     const u2 = makeUser();
     await db.insert(users).values(u2);
     await db
       .insert(subscriptions)
       .values(makeSubscription(u2.id, { plan: 'pro', status: 'active' }));
-    await snapshotCurrentMonthMrr(db, now);
+    await snapshotCurrentMonthMrr(db, now, plansFixture);
 
     const rows = await db.select().from(mrrSnapshots);
     expect(rows).toHaveLength(1);

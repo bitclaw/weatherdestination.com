@@ -12,7 +12,7 @@ export const Route = createFileRoute('/_landing/features')({
   head: () => ({
     meta: getSeoMeta({
       title: `Features - ${config.appName}`,
-      description: `Everything you need to ship your SaaS. See what's included in ${config.appName}.`,
+      description: `Climate risk, sunshine, air quality, and cost of living for 82 US cities: everything ${config.appName} compares.`,
       url: `https://${config.domainName}/features`
     })
   }),
@@ -26,11 +26,11 @@ function FeaturesPage() {
       <main className="pt-16">
         <AnimateIn className="px-6 pt-16 pb-4 text-center">
           <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-            Everything you need to ship
+            Everything you need to compare
           </h1>
           <p className="text-muted-foreground mx-auto mt-4 max-w-xl text-lg">
-            Auth, billing, emails, per-user databases , all wired up and ready
-            to go.
+            Climate risk, sunshine, air quality, and cost of living for 82 US
+            cities, in one side-by-side view.
           </p>
         </AnimateIn>
         <LandingFeatures />

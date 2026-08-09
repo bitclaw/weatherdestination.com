@@ -2,20 +2,18 @@ import { Check, X } from 'lucide-react';
 import { AnimateIn } from '@/components/ui/animate-in';
 import { config } from '@/config';
 
-// TODO: replace with your product's actual pain points and benefits
 const withoutItems = [
-  'Spend days wiring auth from scratch',
-  'Copy-paste Stripe webhook code from docs',
-  'Debug concurrent SQLite write errors',
-  'Ship week 6 instead of day 1'
+  'Guess based on a friend’s recommendation',
+  'Find out about wildfire season after signing a lease',
+  'Compare cities by opening a dozen browser tabs',
+  'Discover the winters are darker than you can handle'
 ];
 
-// TODO: replace with your product's actual benefits
 const withItems = [
-  'OTP auth ready in 5 minutes',
-  'Stripe billing + webhooks pre-wired',
-  'Per-user SQLite with write locks built in',
-  'Deploy on day 1, build features on day 2'
+  'Climate and disaster risk scored for every city',
+  'Sunshine hours and cloud cover, not just a monthly average',
+  'Side-by-side comparison of up to 5 cities at once',
+  'Cost of living and air quality in the same view'
 ];
 
 export function LandingWithWithout() {
@@ -24,7 +22,7 @@ export function LandingWithWithout() {
       <div className="mx-auto max-w-5xl">
         <AnimateIn className="text-center">
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-            Stop reinventing the wheel
+            Stop guessing, start comparing
           </h2>
         </AnimateIn>
 
