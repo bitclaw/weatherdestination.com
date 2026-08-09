@@ -8,7 +8,7 @@ const faqs = [
     id: 'is-it-free',
     question: 'Is this free?',
     answer:
-      'Yes. Comparing cities is free and doesn’t require an account. We may add a paid, more detailed relocation report later, but the comparison tool itself stays free.'
+      'Comparing cities is free and doesn’t require an account. A one-time $29 purchase unlocks the detailed report: every scoring factor explained, a personalized recommendation, and a printable layout.'
   },
   {
     id: 'which-cities',
@@ -32,7 +32,7 @@ const faqs = [
     id: 'account-needed',
     question: 'Do I need to create an account?',
     answer:
-      "No. Comparisons run without signing up. Leave your email on a comparison page if you'd like to hear when deeper, downloadable reports launch."
+      'No account is needed to compare cities. Buying the detailed report requires a quick sign-in so the purchase is tied to your account.'
   },
   {
     id: 'more-cities',

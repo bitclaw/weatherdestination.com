@@ -2,10 +2,12 @@ import { err, ok, type Result } from '@bitclaw/result';
 import { createServerFn } from '@tanstack/react-start';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { hasReportAccess } from '@/features/billing/server/report-access.server';
 import { ERROR_CODES } from '@/lib/constants';
 import { db } from '@/lib/db';
 import { cities } from '@/lib/db/schema';
 import { createRateLimiter, getClientIP } from '@/server/rate-limit';
+import { requireUser } from '@/server/require-user';
 import { isFresh, readCachedWeatherData } from './weather-cache.server';
 
 type CityListRow = {
@@ -85,3 +87,13 @@ export const compareCitiesFn = createServerFn({ method: 'GET' })
 
     return ok(rows);
   });
+
+// Not user-input-driven, so no rate limit - just a purchases lookup for
+// whoever's currently logged in (or `false` if nobody is).
+export const reportAccessFn = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<Result<boolean>> => {
+    const user = await requireUser();
+    if (!user) return ok(false);
+    return ok(await hasReportAccess(db, user.id));
+  }
+);

@@ -12,17 +12,23 @@ export { stripe };
 
 // plans injectable for tests: config.stripe.plans has empty price ids under
 // bun test (import.meta.env is {}), which would make every assertion vacuous.
+//
+// Return type excludes one-time-only plan ids (currently 'report'): this
+// only ever matches against plan.recurring, so a plan with no `recurring`
+// block (like the report tier) can never be returned here - the cast is
+// safe by construction, not just convenient. Callers write this value
+// straight into subscriptions.plan, which only allows subscription plan ids.
 export const getPlanIdForPriceId = (
   priceId: string | null | undefined,
   plans: readonly StripePlan[] = config.stripe.plans
-): PlanId | undefined => {
+): Exclude<PlanId, 'report'> | undefined => {
   if (priceId) {
     for (const plan of plans) {
       if (
         plan.recurring?.priceId === priceId ||
         plan.recurring?.yearlyPriceId === priceId
       ) {
-        return plan.id;
+        return plan.id as Exclude<PlanId, 'report'>;
       }
     }
   }

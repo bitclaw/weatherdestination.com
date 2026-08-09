@@ -38,6 +38,14 @@ export function LandingFooter() {
                 </Link>
               </li>
               <li>
+                <Link
+                  className="hover:text-primary transition-colors"
+                  to="/pricing"
+                >
+                  Pricing
+                </Link>
+              </li>
+              <li>
                 <a className="hover:text-primary transition-colors" href="#faq">
                   FAQ
                 </a>

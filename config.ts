@@ -4,8 +4,8 @@
 //   or run: bun run theme <preset-id>  (browse: https://ui.shadcn.com/create)
 // =============================================================================
 
-export type PlanId = 'solo' | 'pro' | 'team';
-export type PlanKey = 'free' | 'solo' | 'pro' | 'team';
+export type PlanId = 'solo' | 'pro' | 'team' | 'report';
+export type PlanKey = 'free' | 'solo' | 'pro' | 'team' | 'report';
 export type PlanLimits = {
   maxNotes: number;
   maxFileUploads: number;
@@ -110,11 +110,31 @@ const domainName = 'weatherdestination.com';
 // import.meta.env is Vite-only , undefined in Node/Playwright/Bun script contexts
 const _env: Record<string, string | undefined> = import.meta.env ?? {};
 
-// No plans yet: v1 ships the city comparison tool free. Add a plan here
-// (and flip billing.mode to 'one_time') once the paid relocation report
-// exists to sell - see src/components/landing/landing-pricing.tsx, which
-// renders nothing while this stays empty.
-const stripePlans: StripePlan[] = [];
+// City comparison stays free. The one paid tier is a detailed per-city
+// report (full risk/SAD scoring breakdown + printable layout) - see
+// src/features/weather/server/scoring.ts and src/routes/compare/results.tsx.
+// Access is gated on a matching non-refunded row in `purchases`, not the
+// global `users.hasAccess` boolean - see hasReportAccess() in
+// src/features/billing/server/report-access.server.ts - so a future
+// higher-priced tier doesn't get auto-unlocked by this one.
+const stripePlans: StripePlan[] = [
+  {
+    id: 'report',
+    name: 'Detailed Report',
+    description:
+      'Full climate risk and SAD-risk breakdown for the cities you compare, plus a printable report.',
+    features: [
+      'Every scoring factor explained per city',
+      'Personalized recommendation',
+      'Printable report',
+      'One-time purchase, lifetime access'
+    ],
+    oneTime: {
+      priceId: _env.VITE_STRIPE_REPORT_PRICE_ID ?? '',
+      price: 29
+    }
+  }
+];
 
 export const config = {
   appName: 'WeatherDestination',
@@ -154,6 +174,12 @@ export const config = {
   },
 
   billing: {
+    // This product has exactly one paid tier and it's one-time (the $29
+    // report) - set VITE_BILLING_MODE=one_time in the deploy env. Left
+    // defaulting to 'subscription' here (not hardcoded to 'one_time')
+    // because several pre-existing tests (billing-reconciliation,
+    // stripe-webhook routing) assume this module-level default when they
+    // don't pass an explicit mode - flipping it broke 20 of them.
     mode:
       (_env.VITE_BILLING_MODE as 'subscription' | 'one_time' | undefined) ??
       'subscription',
@@ -201,6 +227,14 @@ export const config = {
         maxFileUploads: -1,
         maxApiKeys: -1,
         maxFeatureRequests: -1
+      },
+      // Irrelevant to the report tier (a one-time purchase, not a plan with
+      // feature limits) - mirrors 'free' only to satisfy the Record<PlanKey, ...> type.
+      report: {
+        maxNotes: 10,
+        maxFileUploads: 10,
+        maxApiKeys: 3,
+        maxFeatureRequests: 20
       }
     }
   },

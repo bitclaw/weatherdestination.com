@@ -59,6 +59,12 @@ export function LandingNavbar() {
           >
             Compare
           </Link>
+          <Link
+            className="text-muted-foreground hover:text-primary"
+            to="/pricing"
+          >
+            Pricing
+          </Link>
           <Link className="text-muted-foreground hover:text-primary" to="/blog">
             Blog
           </Link>

@@ -16,10 +16,9 @@ export const Route = createFileRoute('/sitemap.xml')({
           '/',
           '/pricing',
           '/features',
+          '/compare',
           '/blog',
           '/changelog',
-          '/compare/shipfast',
-          '/compare/vercel-templates',
           '/tos',
           '/privacy',
           '/contact'

@@ -32,6 +32,7 @@ export const creditsQueryKey = () => ['credits'] as const;
 export const citiesQueryKey = () => ['weather', 'cities'] as const;
 export const cityComparisonQueryKey = (cityIds: string[]) =>
   ['weather', 'compare', [...cityIds].sort()] as const;
+export const reportAccessQueryKey = () => ['weather', 'report-access'] as const;
 
 // Called with params for the specific paginated query (queryOptions);
 // called with no args for invalidation, matching every paginated variant

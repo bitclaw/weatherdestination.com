@@ -1,6 +1,16 @@
 import { queryOptions } from '@tanstack/react-query';
-import { citiesQueryKey, cityComparisonQueryKey } from '@/lib/query-keys';
-import { compareCitiesFn, listCitiesFn } from './server/weather.queries';
+import {
+  citiesQueryKey,
+  cityComparisonQueryKey,
+  reportAccessQueryKey
+} from '@/lib/query-keys';
+import {
+  compareCitiesFn,
+  listCitiesFn,
+  reportAccessFn
+} from './server/weather.queries';
+
+export { combinedScore, sadRiskScore } from './server/scoring';
 
 export const citiesQueryOptions = queryOptions({
   queryKey: citiesQueryKey(),
@@ -23,3 +33,13 @@ export const cityComparisonQueryOptions = (cityIds: string[]) =>
     enabled: cityIds.length >= 2 && cityIds.length <= 5,
     staleTime: 60_000
   });
+
+export const reportAccessQueryOptions = queryOptions({
+  queryKey: reportAccessQueryKey(),
+  queryFn: async () => {
+    const result = await reportAccessFn();
+    if (!result.ok) throw new Error(result.message);
+    return result.data;
+  },
+  staleTime: 60_000
+});

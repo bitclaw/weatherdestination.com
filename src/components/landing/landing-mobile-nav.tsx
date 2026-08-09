@@ -36,6 +36,13 @@ export function LandingMobileNav({ onClose }: LandingMobileNavProps) {
         <Link
           className="text-muted-foreground hover:text-primary"
           onClick={onClose}
+          to="/pricing"
+        >
+          Pricing
+        </Link>
+        <Link
+          className="text-muted-foreground hover:text-primary"
+          onClick={onClose}
           to="/blog"
         >
           Blog

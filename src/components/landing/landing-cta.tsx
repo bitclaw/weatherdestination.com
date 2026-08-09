@@ -30,7 +30,8 @@ export function LandingCta() {
           </h2>
           <p className="text-primary-foreground/80 mx-auto mt-4 max-w-xl text-lg">
             Pick 2 to 5 cities and see climate risk, sunshine, and cost of
-            living side by side. Free, no account needed.
+            living side by side. Free, no account needed - with a detailed $29
+            report available once you've compared.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Link
