@@ -27,6 +27,7 @@ describe('buildCsp', () => {
     expect(csp).toContain('https://scripts.clarity.ms');
     expect(csp).toContain('https://client.crisp.chat');
     expect(csp).toContain('https://cloud.umami.is');
+    expect(csp).toContain('https://gateway.umami.is');
     expect(csp).toContain('https://*.sentry.io');
   });
 });

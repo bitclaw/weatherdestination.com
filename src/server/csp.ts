@@ -41,6 +41,7 @@ const baseDirectives: CspDirectives = {
     'https://*.clarity.ms',
     'https://cloudflareinsights.com',
     'https://cloud.umami.is',
+    'https://gateway.umami.is', // Umami cloud script posts events here, not cloud.umami.is
     'https://*.sentry.io'
   ],
   'font-src': ["'self'", 'https://fonts.gstatic.com'],
