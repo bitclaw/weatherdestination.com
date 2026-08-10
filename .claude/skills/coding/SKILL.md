@@ -17,7 +17,7 @@ Every server-side operation uses `createServerFn` from `@tanstack/react-start`.
 | Rule | Wrong | Right |
 |------|-------|-------|
 | Always authenticate | No auth check | `const user = await requireUser(); if (!user) return err(...)` |
-| Always validate POST input | Raw `request.json()` | `.inputValidator(z.object({ ... }))` |
+| Always validate POST input | Raw `request.json()` | `.validator(z.object({ ... }))` |
 | Always return result types | `throw new Error(...)` | `return ok(data)` / `return err('CODE', 'message')` |
 | Serialize writes | Direct DB write | `return withWriteLock(user.id, () => { ... })` |
 | Never import DB in routes | `import { db } from '@/db'` in route file | Call server function, or import crud from feature |
@@ -34,7 +34,7 @@ import { ERROR_CODES } from '@/lib/constants';
 import { requireUser } from '@/server/require-user';
 
 export const createItem = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ title: z.string().min(1).max(200) }))
+  .validator(z.object({ title: z.string().min(1).max(200) }))
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
@@ -176,7 +176,7 @@ Reference: `src/features/feature-requests/components/feature-requests-table.tsx`
 ## Checklist Before Submitting Code
 
 - [ ] Every server function calls `requireUser()` first
-- [ ] Every POST server function has `.inputValidator(z.object(...))`
+- [ ] Every POST server function has `.validator(z.object(...))`
 - [ ] All DB reads use `getUserDb(user.id)`
 - [ ] All DB writes wrapped in `withWriteLock(user.id, fn)`
 - [ ] Server functions return `ok(...)` / `err(...)`, never throw
