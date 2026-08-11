@@ -1,7 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { toast } from '@/components/ui/toast';
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000;
+const POLL_JITTER_MS = 30 * 1000; // +/- 30s around the interval
+
+// Re-randomized on every reschedule, not just once at mount - avoids every
+// open tab's poll staying roughly phase-aligned after a synchronized
+// mass-mount event (a marketing email, everyone reloading post-incident),
+// which would otherwise produce a periodic burst against /api/version every
+// interval thereafter. Exported for the bounds test.
+export function withJitter(ms: number): number {
+  return ms + (Math.random() * 2 - 1) * POLL_JITTER_MS;
+}
 
 // Proactively detects a new deploy while the tab is open, rather than
 // reacting to a chunk 404 after the fact (see chunk-reload-guard.ts for the
@@ -16,18 +26,16 @@ const POLL_INTERVAL_MS = 5 * 60 * 1000;
 // directly against the poll response with no server round-trip needed for
 // the initial value.
 export function useUpdateAvailable(): void {
-  const notifiedRef = useRef(false);
-
   useEffect(() => {
     const currentBuildId = import.meta.env.VITE_BUILD_ID ?? 'dev';
-    const interval = setInterval(async () => {
-      if (notifiedRef.current) return;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const tick = async () => {
       try {
         const res = await fetch('/api/version');
         if (!res.ok) return;
         const { buildId } = (await res.json()) as { buildId?: string };
         if (buildId && buildId !== currentBuildId) {
-          notifiedRef.current = true;
           // Warms the HTTP cache for the reload target ahead of the click.
           const link = document.createElement('link');
           link.rel = 'prefetch';
@@ -41,12 +49,18 @@ export function useUpdateAvailable(): void {
               onClick: () => window.location.reload()
             }
           });
+          // No further poll can teach this tab anything useful - reloading
+          // gets the latest build regardless of what a later poll would
+          // find. Deliberately does not reschedule.
+          return;
         }
       } catch {
         // Transient network error - try again next tick, not worth surfacing.
       }
-    }, POLL_INTERVAL_MS);
+      timeoutId = setTimeout(tick, withJitter(POLL_INTERVAL_MS));
+    };
 
-    return () => clearInterval(interval);
+    timeoutId = setTimeout(tick, withJitter(POLL_INTERVAL_MS));
+    return () => clearTimeout(timeoutId);
   }, []);
 }
