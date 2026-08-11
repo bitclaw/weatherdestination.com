@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 import { ToastProvider } from '@/components/ui/toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { featureFlagsQueryOptions } from '@/features/feature-flags';
+import { useUpdateAvailable } from '@/hooks/use-update-available';
 import { ERROR_CODES, PATHS } from '@/lib/constants';
 import type { AppRouteContext } from '@/lib/types';
 import { AppLayout } from '@/pages';
@@ -64,6 +65,7 @@ export const Route = createFileRoute('/_app')({
   component: () => {
     const { user, isAdmin, plan, flags } =
       Route.useRouteContext() as AppRouteContext;
+    useUpdateAvailable();
     return (
       <TooltipProvider>
         <ToastProvider>

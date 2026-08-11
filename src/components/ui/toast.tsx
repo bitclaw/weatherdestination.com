@@ -10,17 +10,24 @@ import {
 
 type ToastVariant = 'success' | 'error' | 'default';
 
+type ToastAction = {
+  label: string;
+  onClick: () => void;
+};
+
 type ToastItem = {
   id: string;
   title: string;
   description?: string;
   variant: ToastVariant;
   duration: number;
+  action?: ToastAction;
 };
 
 type ToastOptions = {
   description?: string;
   duration?: number;
+  action?: ToastAction;
 };
 
 type ToastListener = (item: ToastItem) => void;
@@ -45,7 +52,8 @@ function createToast(
     title,
     variant,
     description: opts?.description,
-    duration: opts?.duration ?? 4000
+    duration: opts?.duration ?? 4000,
+    action: opts?.action
   });
 }
 
@@ -101,6 +109,17 @@ function ToastItemComponent({
           <ToastPrimitive.Description className="text-muted-foreground mt-1 text-sm">
             {item.description}
           </ToastPrimitive.Description>
+        )}
+        {item.action && (
+          <ToastPrimitive.Action altText={item.action.label} asChild>
+            <button
+              className="text-primary mt-2 text-sm font-medium hover:underline"
+              onClick={item.action.onClick}
+              type="button"
+            >
+              {item.action.label}
+            </button>
+          </ToastPrimitive.Action>
         )}
       </div>
       <ToastPrimitive.Close aria-label="Dismiss" asChild>

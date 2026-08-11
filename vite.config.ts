@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import contentCollections from '@content-collections/vite';
 import babel from '@rolldown/plugin-babel';
 import { sentryTanstackStart } from '@sentry/tanstackstart-react/vite';
@@ -5,6 +6,27 @@ import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { createLogger, defineConfig } from 'vite';
+
+// Baked into both the client and SSR bundles at build time (a single Vite
+// build produces one matched pair, so the constant is identical everywhere
+// the same build's code runs) - powers the update-available banner's
+// version check without any runtime env var injection, unlike a per-boot
+// deploy-time RELOAD_ID. Prefers a short git SHA for a human-meaningful
+// value; must fall back to a timestamp, not throw - .dockerignore excludes
+// .git from the documented Docker build context, so `git rev-parse` fails
+// there specifically, not just hypothetically in some unknown environment.
+function resolveBuildId(): string {
+  try {
+    return execSync('git rev-parse --short HEAD', {
+      stdio: ['ignore', 'pipe', 'ignore']
+    })
+      .toString()
+      .trim();
+  } catch {
+    return String(Date.now());
+  }
+}
+const buildId = resolveBuildId();
 
 // @tanstack/* and seroval-plugins ship ESM with sourceMappingURL comments
 // referencing .map files not included in their npm release. Vite logs
@@ -21,6 +43,9 @@ logger.warn = (msg, options) => {
 
 export default defineConfig({
   customLogger: logger,
+  define: {
+    'import.meta.env.VITE_BUILD_ID': JSON.stringify(buildId)
+  },
   resolve: {
     tsconfigPaths: true
   },

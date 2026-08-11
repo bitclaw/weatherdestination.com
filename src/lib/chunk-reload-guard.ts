@@ -7,10 +7,37 @@
 const CHUNK_LOAD_ERROR_RE =
   /Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk [\w.-]+ failed|error loading dynamically imported module/i;
 
+// Vite's default hashed-asset output prefix for this app (confirmed against
+// vite.config.ts's default build.rollupOptions.output and server/start.ts's
+// /assets/* static-serving convention). A <script>/<link> load failure only
+// means "stale build" if it's one of ours - matching this tightly avoids
+// treating a blocked/failed third-party script (Crisp, Umami, Clarity,
+// Turnstile, Stripe, Sentry - or any ad-blocked CDN) as a reason to
+// force-reload the page out from under the user.
+const TRACKED_ASSET_PATH_PREFIX = '/assets/';
+
 const RELOAD_FLAG = 'runmist:chunk-reload-attempted';
 
-const isChunkLoadError = (message: string | null | undefined): boolean =>
+export const isChunkLoadError = (message: string | null | undefined): boolean =>
   !!message && CHUNK_LOAD_ERROR_RE.test(message);
+
+// Resource-load failures (<script>/<link> 404s) dispatch a plain Event with
+// no .message and don't bubble - this is the counterpart check for that case,
+// driven by the failed element's URL instead of an error message.
+export const isTrackedAssetFailure = (
+  url: string,
+  currentOrigin: string
+): boolean => {
+  try {
+    const parsed = new URL(url, currentOrigin);
+    return (
+      parsed.origin === currentOrigin &&
+      parsed.pathname.startsWith(TRACKED_ASSET_PATH_PREFIX)
+    );
+  } catch {
+    return false;
+  }
+};
 
 const reloadOnce = () => {
   if (sessionStorage.getItem(RELOAD_FLAG)) return;
@@ -19,9 +46,27 @@ const reloadOnce = () => {
 };
 
 export function installChunkReloadGuard(): void {
-  window.addEventListener('error', event => {
-    if (isChunkLoadError(event.message)) reloadOnce();
-  });
+  // capture: true is required to observe <script>/<link> resource-load
+  // failures at all (they don't bubble to window), and also still catches
+  // ordinary uncaught-exception error events, since window sits in the
+  // capture path for those regardless.
+  window.addEventListener(
+    'error',
+    event => {
+      const target = event.target;
+      if (
+        target instanceof HTMLScriptElement ||
+        target instanceof HTMLLinkElement
+      ) {
+        const url =
+          target instanceof HTMLScriptElement ? target.src : target.href;
+        if (url && isTrackedAssetFailure(url, location.origin)) reloadOnce();
+        return;
+      }
+      if (isChunkLoadError(event.message)) reloadOnce();
+    },
+    true
+  );
 
   window.addEventListener('unhandledrejection', event => {
     const message =

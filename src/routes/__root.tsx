@@ -5,9 +5,11 @@ import {
   createRootRouteWithContext,
   HeadContent,
   Outlet,
-  Scripts
+  Scripts,
+  useRouterState
 } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+import { useEffect, useState } from 'react';
 import { CookieConsentBanner } from '@/components/cookie-consent/CookieConsentBanner';
 import { CrispChat } from '@/components/crisp-chat';
 import { NavigationProgress } from '@/components/navigation-progress';
@@ -127,8 +129,80 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootComponent
 });
 
+// Masks the gap between an empty SSR'd document and React's first client
+// commit on /_app-scoped routes (ssr: 'data-only' in _app.tsx - no component
+// markup is server-rendered there, only data). Genuinely static: rendered
+// unconditionally in the raw HTML (no mount-gate, unlike NavigationProgress,
+// which deliberately can't appear this early), hidden by a plain mount
+// effect once real content has committed in the same pass. Gated on the
+// /_app route id (confirmed via routeTree.gen.ts) so it never renders for
+// fully-SSR'd public pages, which have no such gap to mask. Complementary to
+// _app.tsx's own pendingComponent, not a duplicate - that one covers
+// subsequent client-side pending navigations (same "can't appear before
+// hydration" limitation as NavigationProgress), this one covers the initial
+// pre-hydration gap specifically.
+function AppLoadingShell() {
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    setHidden(true);
+  }, []);
+
+  if (hidden) return null;
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999
+      }}
+    >
+      <style
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: static keyframe, no Tailwind utility available pre-stylesheet
+        dangerouslySetInnerHTML={{
+          __html:
+            '@keyframes app-loading-shell-spin{to{transform:rotate(360deg)}}'
+        }}
+      />
+      <svg
+        aria-hidden="true"
+        style={{
+          width: '2rem',
+          height: '2rem',
+          animation: 'app-loading-shell-spin 1s linear infinite',
+          color: 'inherit'
+        }}
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+          style={{ opacity: 0.25 }}
+        />
+        <path
+          d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          fill="currentColor"
+          style={{ opacity: 0.75 }}
+        />
+      </svg>
+    </div>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const isAppRoute = useRouterState({
+    select: s => s.matches.some(m => m.routeId === '/_app')
+  });
   return (
     <QueryClientProvider client={queryClient}>
       <html className="h-full" lang="en" suppressHydrationWarning>
@@ -141,6 +215,7 @@ function RootComponent() {
         </head>
         <body className="h-full">
           <NavigationProgress />
+          {isAppRoute && <AppLoadingShell />}
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
