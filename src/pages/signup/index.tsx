@@ -12,6 +12,7 @@ import { validateEmail } from '@/features/email-validation';
 import { authClient } from '@/lib/auth-client';
 import { PATHS } from '@/lib/constants';
 import { bootstrapQueryKey } from '@/lib/query-keys';
+import { sendSignupOtp } from '@/server/functions';
 
 const appName = config.appName;
 const turnstileEnabled = config.auth.turnstile.enabled;
@@ -42,10 +43,20 @@ export function SignupPage() {
   const {
     token: captchaToken,
     containerRef: captchaRef,
+    loadFailed: captchaLoadFailed,
     reset: resetCaptcha,
     detach: detachCaptcha,
     remount: remountCaptcha
   } = useCaptcha();
+  // Fail-open on loadFailed only covers the OTP send path (sendSignupOtp
+  // reimplements captcha verification itself, so a token that never
+  // loaded doesn't block). The magic-link branch below still calls
+  // better-auth's real endpoint directly, which hard-requires a captcha
+  // token when protected - loadFailed can't bypass that without its own
+  // wrapper, so don't relax the gate when magic-link is what'll actually
+  // be submitted.
+  const captchaBypassable =
+    captchaLoadFailed && verificationMethod !== 'magic-link';
 
   useEffect(() => {
     setLastUsed(localStorage.getItem(LAST_METHOD_KEY) as LastUsedMethod | null);
@@ -97,7 +108,7 @@ export function SignupPage() {
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (turnstileEnabled && !captchaToken) {
+    if (turnstileEnabled && !captchaToken && !captchaBypassable) {
       setError('Please complete the security challenge.');
       return;
     }
@@ -156,13 +167,15 @@ export function SignupPage() {
     }
 
     try {
-      const { error: otpError } = await authClient.emailOtp.sendVerificationOtp(
-        { email, type: 'sign-in' },
-        { headers: captchaHeaders }
-      );
-      if (otpError) {
+      const result = await sendSignupOtp({
+        data: { email },
+        headers: captchaHeaders
+      });
+      if (!result.ok) {
+        // Turnstile tokens are single-use: the failed request consumed it,
+        // so a retry with the same token can only fail. Force a fresh one.
         resetCaptcha();
-        setError(otpError.message ?? 'Failed to send code');
+        setError(result.message);
         setIsLoading(false);
         return;
       }
@@ -417,7 +430,7 @@ export function SignupPage() {
                 isLoading ||
                 socialLoading !== null ||
                 !email ||
-                (turnstileEnabled && !captchaToken)
+                (turnstileEnabled && !captchaToken && !captchaBypassable)
               }
               type="submit"
             >

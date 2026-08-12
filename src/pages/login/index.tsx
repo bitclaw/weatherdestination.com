@@ -12,6 +12,7 @@ import { validateEmail } from '@/features/email-validation';
 import { authClient } from '@/lib/auth-client';
 import { PATHS } from '@/lib/constants';
 import { bootstrapQueryKey } from '@/lib/query-keys';
+import { sendLoginOtp } from '@/server/functions';
 
 const appName = config.appName;
 const turnstileEnabled = config.auth.turnstile.enabled;
@@ -42,10 +43,20 @@ export function LoginPage() {
   const {
     token: captchaToken,
     containerRef: captchaRef,
+    loadFailed: captchaLoadFailed,
     reset: resetCaptcha,
     detach: detachCaptcha,
     remount: remountCaptcha
   } = useCaptcha();
+  // Fail-open on loadFailed only covers the OTP send path (sendLoginOtp
+  // reimplements captcha verification itself, so a token that never
+  // loaded doesn't block). The magic-link branch below still calls
+  // better-auth's real endpoint directly, which hard-requires a captcha
+  // token when protected - loadFailed can't bypass that without its own
+  // wrapper, so don't relax the gate when magic-link is what'll actually
+  // be submitted.
+  const captchaBypassable =
+    captchaLoadFailed && verificationMethod !== 'magic-link';
 
   useEffect(() => {
     setLastUsed(localStorage.getItem(LAST_METHOD_KEY) as LastUsedMethod | null);
@@ -97,7 +108,7 @@ export function LoginPage() {
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (turnstileEnabled && !captchaToken) {
+    if (turnstileEnabled && !captchaToken && !captchaBypassable) {
       setError('Please complete the security challenge.');
       return;
     }
@@ -156,16 +167,11 @@ export function LoginPage() {
     }
 
     try {
-      const { error: otpError } = await authClient.emailOtp.sendVerificationOtp(
-        { email, type: 'sign-in' },
-        { headers: captchaHeaders }
-      );
-      if (otpError) {
-        resetCaptcha();
-        setError(otpError.message ?? 'Failed to send code');
-        setIsLoading(false);
-        return;
-      }
+      // sendLoginOtp always resolves ok - rate-limit/captcha/unknown-email
+      // failures are deliberately invisible to the client, otherwise a
+      // differently-shaped response here would reopen the enumeration hole
+      // this wrapper exists to close.
+      await sendLoginOtp({ data: { email }, headers: captchaHeaders });
       // The captcha container unmounts once we leave this step -- tell the
       // provider before that happens instead of letting it self-invalidate.
       detachCaptcha();
@@ -255,7 +261,8 @@ export function LoginPage() {
             Check your email
           </h1>
           <p className="text-muted-foreground text-sm">
-            We sent a 6-digit code to <strong>{email}</strong>
+            If you have a {appName} account, we've sent a 6-digit code to{' '}
+            <strong>{email}</strong>
           </p>
         </div>
 
@@ -423,7 +430,7 @@ export function LoginPage() {
                   isLoading ||
                   socialLoading !== null ||
                   !email ||
-                  (turnstileEnabled && !captchaToken)
+                  (turnstileEnabled && !captchaToken && !captchaBypassable)
                 }
                 type="submit"
               >

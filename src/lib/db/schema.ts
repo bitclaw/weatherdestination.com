@@ -387,3 +387,21 @@ export const adminAuditLog = sqliteTable(
   },
   table => [index('admin_audit_log_admin_idx').on(table.adminUserId)]
 );
+
+// ---------------------------------------------------------------------------
+// Shared/cross-process rate limiting (IP-keyed, pre-auth endpoints). Backed
+// by the shared meta DB, unlike createRateLimiter's in-memory Map, which
+// only tracks state within a single cluster.ts worker process.
+// ---------------------------------------------------------------------------
+
+export const rateLimitEvents = sqliteTable(
+  'rate_limit_events',
+  {
+    id: text('id').primaryKey(),
+    key: text('key').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+  },
+  table => [
+    index('rate_limit_events_key_created_idx').on(table.key, table.createdAt)
+  ]
+);
