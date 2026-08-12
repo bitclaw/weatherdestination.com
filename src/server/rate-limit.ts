@@ -70,6 +70,28 @@ export function createRateLimiter(config: Config) {
   return { check };
 }
 
+/**
+ * Reads a single header from either a real Headers instance (what
+ * @tanstack/react-start/server's getRequestHeaders() actually returns -
+ * getH3Event().req.headers) or a plain object (what callers passing an
+ * explicit headers arg use). Bracket access on a real Headers instance is
+ * silently undefined for every key - it's a class with a .get() method,
+ * not a plain object - so treating the two shapes the same way was a real
+ * bug: getClientIP() never actually extracted an IP for any caller relying
+ * on the default getRequestHeaders() path, regardless of TRUST_PROXY or
+ * what headers were actually present. Confirmed by checking
+ * node_modules/@tanstack/start-server-core/dist/esm/request-response.js.
+ */
+function readHeader(
+  headers: Record<string, string | undefined> | Headers,
+  name: string
+): string | undefined {
+  if (typeof (headers as Headers).get === 'function') {
+    return (headers as Headers).get(name) ?? undefined;
+  }
+  return (headers as Record<string, string | undefined>)[name];
+}
+
 /** Extract client IP based on TRUST_PROXY setting.
  *  cloudflare: cf-connecting-ip
  *  nginx:      x-real-ip (set by nginx proxy_set_header X-Real-IP $remote_addr)
@@ -81,22 +103,19 @@ export function createRateLimiter(config: Config) {
  *  published IP ranges). See .env.example's TRUST_PROXY section.
  */
 export function getClientIP(
-  headers?: Record<string, string | undefined>
+  headers?: Record<string, string | undefined> | Headers
 ): string | null {
   try {
     const trustProxy = process.env.TRUST_PROXY ?? 'none';
-    const h = (headers ?? getRequestHeaders()) as Record<
-      string,
-      string | undefined
-    >;
+    const h = headers ?? getRequestHeaders();
     if (trustProxy === 'cloudflare') {
-      return h['cf-connecting-ip'] ?? null;
+      return readHeader(h, 'cf-connecting-ip') ?? null;
     }
     if (trustProxy === 'nginx') {
-      return h['x-real-ip'] ?? null;
+      return readHeader(h, 'x-real-ip') ?? null;
     }
     if (trustProxy === 'proxy') {
-      return h['x-forwarded-for']?.split(',')[0]?.trim() ?? null;
+      return readHeader(h, 'x-forwarded-for')?.split(',')[0]?.trim() ?? null;
     }
     return null;
   } catch {

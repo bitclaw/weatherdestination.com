@@ -147,4 +147,25 @@ describe('getClientIP', () => {
       ).toBeNull();
     });
   });
+
+  // getRequestHeaders() from @tanstack/react-start/server returns a real
+  // Headers instance, not a plain object (getH3Event().req.headers) -
+  // bracket access on one is silently undefined for every key, which was
+  // a real bug here: every caller relying on the default (no-args) path
+  // got null back, always, regardless of TRUST_PROXY or what headers were
+  // actually present.
+  it('reads from a real Headers instance, not just a plain object', () => {
+    process.env.TRUST_PROXY = 'cloudflare';
+    const headers = new Headers({ 'cf-connecting-ip': '5.5.5.5' });
+    expect(getClientIP(headers)).toBe('5.5.5.5');
+  });
+
+  it('Headers instance: still respects TRUST_PROXY header selection', () => {
+    process.env.TRUST_PROXY = 'nginx';
+    const headers = new Headers({
+      'cf-connecting-ip': '1.1.1.1',
+      'x-real-ip': '2.2.2.2'
+    });
+    expect(getClientIP(headers)).toBe('2.2.2.2');
+  });
 });
