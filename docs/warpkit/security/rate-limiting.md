@@ -43,14 +43,43 @@ does not actually set lets clients spoof their IP and bypass rate limits:
 
 | `TRUST_PROXY` | Header trusted |
 |---------------|----------------|
-| `cloudflare` (default) | `cf-connecting-ip` |
+| `cloudflare` | `cf-connecting-ip` |
 | `nginx` | `x-real-ip` |
 | `proxy` | `x-forwarded-for` (first IP) |
-| `none` | no header , every request keys to `'unknown'` |
+| `none` (default) | no header , every request keys to `'unknown'` |
 
-Set it to match your actual deployment topology (see `.env.example`). Falls
-back to `'unknown'` when the selected header is absent; the limiter is
-disabled entirely outside production.
+**The default is `none`, not `cloudflare`** , deliberately, since most of
+this template's own deploy recipes (Docker, Fly.io, Railway) don't put
+Cloudflare in front by default. Set it to match your actual deployment
+topology (see `.env.example`'s `TRUST_PROXY` section for the full spoofing
+warning) , if your app is proxied through Cloudflare, set `TRUST_PROXY=cloudflare`
+or every request collapses onto the same `'unknown'` key.
+
+### `failClosedOnUnknownIp`
+
+```ts
+const limiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 20,
+  failClosedOnUnknownIp: true
+});
+```
+
+When true, a request with no resolvable client IP (`getClientIP()` returns
+`null`, no explicit key passed) is **blocked outright** instead of falling
+into the shared `'unknown'` bucket. Without this, a `TRUST_PROXY`
+misconfiguration (or the `none` default) collapses every caller into one
+global budget , fine for a low-stakes limiter, dangerous for anything
+auth-adjacent, where one attacker exhausting the shared bucket locks out
+every real user. Used today by `email-validation.mutations.ts` and
+`admin.mutations.ts`.
+
+This flag lives on `createRateLimiter` (in-memory) only. The DB-backed
+`shared-rate-limiter.ts` below doesn't have it , code using that limiter
+implements the same fail-closed check manually at the call site (see
+`login-otp.ts`/`signup-otp.ts` below), gated to production only so it
+doesn't also block local dev, where `TRUST_PROXY` is unset by default and
+`getClientIP()` is always `null`.
 
 ## Config options
 
@@ -96,9 +125,68 @@ Both `checkUserRateLimit` and `logUserEvent` must be called inside `withWriteLoc
 
 | Scenario | Limiter |
 |----------|---------|
-| Unauthenticated endpoint (public API, lead capture) | `createRateLimiter` (IP-based) |
+| Unauthenticated endpoint, single-worker-safe (public API, lead capture) | `createRateLimiter` (in-memory, IP-based) |
+| Unauthenticated endpoint that must hold across `cluster.ts` worker processes (auth-adjacent: OTP send, magic-link) | `shared-rate-limiter.ts` (DB-backed, IP-based) |
 | Authenticated mutation by signed-in user | `checkUserRateLimit` (per-user DB) |
 | Both (defense in depth) | Use both: IP gate before lock, user gate inside lock |
+
+## Cross-process IP-based limiting: `shared-rate-limiter.ts`
+
+`createRateLimiter`'s in-memory `Map` only tracks state within a single
+`cluster.ts` worker process , if the app runs `availableParallelism()`
+worker processes (the default production entrypoint, see
+`docs/warpkit/features/background-jobs.md`), an attacker round-robins
+across workers behind the same reverse proxy and gets ~N× the intended
+budget before any single worker's counter trips. For endpoints where the
+rate limit is a load-bearing defense , not just noise reduction , that gap
+matters. `src/lib/db/shared-rate-limiter.ts` fixes it by backing the
+counter with the shared meta DB (`rate_limit_events` table) instead of a
+process-local `Map`:
+
+```ts
+import {
+  checkSharedRateLimit,
+  recordSharedRateLimitEvent,
+  isActive
+} from '@/lib/db/shared-rate-limiter';
+import { getClientIP } from '@/server/rate-limit';
+
+const RATE_LIMIT_CONFIG = { windowMs: 60 * 1000, max: 3 };
+
+export const myFn = createServerFn({ method: 'POST' }).handler(async () => {
+  const ip = getClientIP();
+
+  // Fail closed in production only - see failClosedOnUnknownIp above for
+  // why this must not run in dev, where getClientIP() is always null.
+  if (!ip && isActive()) {
+    return err(ERROR_CODES.RATE_LIMITED, 'Too many requests. Please try again later.');
+  }
+
+  const key = ip ?? 'unknown';
+  if (await checkSharedRateLimit(key, RATE_LIMIT_CONFIG)) {
+    return err(ERROR_CODES.RATE_LIMITED, 'Too many requests. Please try again later.');
+  }
+  await recordSharedRateLimitEvent(key);
+
+  // ... handler logic ...
+});
+```
+
+`checkSharedRateLimit`/`recordSharedRateLimitEvent`/`isActive` are the same
+production-only-gated shape as `createRateLimiter` and `checkUserRateLimit`
+, no-op outside `NODE_ENV=production`. Unlike `createRateLimiter`, this
+limiter has no `failClosedOnUnknownIp` option built in; callers implement
+the fail-closed check themselves at the top of the handler (as above) so
+they control the exact error returned.
+
+**Real usage**: `src/server/functions/login-otp.ts` and `signup-otp.ts`.
+Both wrap `auth.api.sendVerificationOTP` directly instead of going through
+`authClient`'s real HTTP endpoint, which means better-auth's own router-level
+`rateLimit.customRules` (configured in `src/server/auth.ts`) never fires for
+these calls , `auth.api.*` bypasses the router entirely. The DB-backed
+limiter here is what actually protects the OTP-send endpoint; it isn't
+redundant with the `customRules` config in `auth.ts`, despite both targeting
+the same nominal path.
 
 ## Two-tier pattern (IP then user)
 
