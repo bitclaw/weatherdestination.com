@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { HttpResponse, http } from 'msw';
 import { mswServer } from '@/test/msw/server';
-import { verifyTurnstileToken } from './verify-turnstile.server';
+import {
+  shouldProceedWithoutBlocking,
+  verifyTurnstileToken
+} from './verify-turnstile.server';
 
 describe('verifyTurnstileToken', () => {
   const originalSecret = process.env.TURNSTILE_SECRET_KEY;
@@ -65,5 +68,19 @@ describe('verifyTurnstileToken', () => {
       const result = await verifyTurnstileToken('any-token', undefined, 50);
       expect(result).toBe(false);
     });
+  });
+});
+
+describe('shouldProceedWithoutBlocking', () => {
+  it('fails open when no token was ever provided', () => {
+    expect(shouldProceedWithoutBlocking(false, false)).toBe(true);
+  });
+
+  it('proceeds when a token was provided and verified', () => {
+    expect(shouldProceedWithoutBlocking(true, true)).toBe(true);
+  });
+
+  it('blocks when a token was provided but failed verification', () => {
+    expect(shouldProceedWithoutBlocking(true, false)).toBe(false);
   });
 });

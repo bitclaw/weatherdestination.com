@@ -36,3 +36,19 @@ export const verifyTurnstileToken = async (
     return false;
   }
 };
+
+/**
+ * Turnstile is fail-open at the caller's discretion (login/signup OTP
+ * send): a widget that never got a chance to run (blocked script,
+ * timeout) shouldn't block a real signup, but a token that was actually
+ * provided and failed verification is a real signal, not a loading
+ * failure, and still blocks. Pure so the distinction is unit-testable
+ * without a network call.
+ */
+export function shouldProceedWithoutBlocking(
+  hasToken: boolean,
+  verified: boolean
+): boolean {
+  if (!hasToken) return true;
+  return verified;
+}

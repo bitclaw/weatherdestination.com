@@ -4,6 +4,13 @@ import { createContext } from 'react';
 export type CaptchaContextValue = {
   token: string | null;
   isReady: boolean;
+  /**
+   * True once the widget is confirmed unable to produce a token - the
+   * script failed to load, it timed out after rendering, or it errored
+   * repeatedly. Consumers that fail-open (login/signup) use this to stop
+   * hard-gating submission on a captcha that never got a chance to run.
+   */
+  loadFailed: boolean;
   reset: () => void;
   /**
    * Call when the element holding the widget (containerRef) is about to

@@ -6,6 +6,7 @@ export function NoCaptchaProvider({ children }: { children: React.ReactNode }) {
   const value: CaptchaContextValue = {
     token: null,
     isReady: true,
+    loadFailed: false,
     reset: () => {},
     detach: () => {},
     remount: () => {},
