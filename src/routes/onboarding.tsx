@@ -3,14 +3,22 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
 import { z } from 'zod';
+import { PlanStep } from '@/components/onboarding';
 import { FormField } from '@/components/ui/form-field';
 import { config } from '@/config';
+import { createCheckoutSessionFn } from '@/features/billing';
 import { ERROR_CODES, PATHS } from '@/lib/constants';
 import { bootstrapQueryKey } from '@/lib/query-keys';
 import {
   bootstrapQueryOptions,
   completeOnboardingFn
 } from '@/server/functions';
+
+// Onboarding's own plan-selection step only handles recurring/subscription
+// plans (createCheckoutSessionFn's interval param assumes a subscription) -
+// skip straight to the completion step for a one_time-billing-mode config,
+// which has nothing for this step to offer.
+const hasRecurringPlans = config.stripe.plans.some(p => p.recurring);
 
 export const Route = createFileRoute('/onboarding')({
   loader: async ({ context }) => {
@@ -33,16 +41,54 @@ function OnboardingPage() {
   const { user } = Route.useLoaderData();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [planLoading, setPlanLoading] = useState<string | null>(null);
 
   const form = useForm({
     defaultValues: { name: user.name ?? '' },
     onSubmit: ({ value }) => {
-      setStep(2);
+      setStep(hasRecurringPlans ? 2 : 3);
       return Promise.resolve(value);
     }
   });
+
+  // Picking a paid plan redirects to Stripe and never reaches the
+  // completion step, so this call site marks onboarding complete itself -
+  // checkout session created first, completeOnboarding only after it
+  // actually succeeds, so a failed checkout doesn't leave onboarding
+  // falsely marked done right before a failed redirect strands the user.
+  const handlePlanSelect = async (
+    planId: string,
+    priceId: string,
+    interval: 'monthly' | 'yearly'
+  ) => {
+    setSubmitError(null);
+    setPlanLoading(planId);
+    try {
+      const checkoutResult = await createCheckoutSessionFn({
+        data: { priceId, interval }
+      });
+      if (!checkoutResult.ok) {
+        setSubmitError(checkoutResult.message);
+        return;
+      }
+
+      const completeResult = await completeOnboardingFn({
+        data: { name: form.getFieldValue('name').trim() || undefined }
+      });
+      if (!completeResult.ok) {
+        setSubmitError(completeResult.message);
+        return;
+      }
+
+      window.location.href = checkoutResult.data.url;
+    } catch {
+      setSubmitError('Something went wrong. Please try again.');
+    } finally {
+      setPlanLoading(null);
+    }
+  };
 
   const handleComplete = async () => {
     setSubmitError(null);
@@ -69,7 +115,7 @@ function OnboardingPage() {
         <div className="text-center">
           <h1 className="text-3xl font-bold">{config.appName}</h1>
           <div className="flex justify-center gap-2 mt-4">
-            {[1, 2].map(s => (
+            {(hasRecurringPlans ? [1, 2, 3] : [1, 3]).map(s => (
               <div
                 className={`h-1.5 w-8 rounded-full transition-colors ${
                   s <= step ? 'bg-primary' : 'bg-muted'
@@ -132,6 +178,15 @@ function OnboardingPage() {
           )}
 
           {step === 2 && (
+            <PlanStep
+              error={submitError}
+              loadingPlan={planLoading}
+              onSelectPlan={handlePlanSelect}
+              onSkip={() => setStep(3)}
+            />
+          )}
+
+          {step === 3 && (
             <div className="space-y-4">
               <div>
                 <h2 className="text-xl font-semibold">You're all set!</h2>

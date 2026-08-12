@@ -19,6 +19,27 @@ describe('completeOnboarding', () => {
     expect(updated?.onboardingComplete).toBe(true);
   });
 
+  it('returns false the first time onboarding is completed', async () => {
+    const db = makeTestSharedDb();
+    const user = makeUser({ onboardingComplete: false });
+    await db.insert(users).values(user);
+
+    const wasAlreadyComplete = await completeOnboarding(db, user.id);
+
+    expect(wasAlreadyComplete).toBe(false);
+  });
+
+  it('returns true on a second call, for the caller to detect a re-complete', async () => {
+    const db = makeTestSharedDb();
+    const user = makeUser({ onboardingComplete: false });
+    await db.insert(users).values(user);
+
+    await completeOnboarding(db, user.id);
+    const wasAlreadyComplete = await completeOnboarding(db, user.id);
+
+    expect(wasAlreadyComplete).toBe(true);
+  });
+
   it('updates display name when provided', async () => {
     const db = makeTestSharedDb();
     const user = makeUser({ name: 'Old Name', onboardingComplete: false });
