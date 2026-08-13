@@ -111,6 +111,26 @@ export const verifications = sqliteTable(
 // Billing
 // ---------------------------------------------------------------------------
 
+// The complete, real value set Stripe ever sets on Subscription.status
+// (node_modules/stripe/cjs/resources/Subscriptions.d.ts, the actual field
+// type - not the broader list-filter type elsewhere in the same file that
+// also includes 'all'/'ended', which are query params, not real states).
+// Exported (unlike `plan`'s inline array below) because multiple other
+// files need to narrow their own local `status` types against this same
+// set - billing.rules.server.ts previously re-widened it to `string | null`
+// with zero compile-time protection against a typo like 'trailing'.
+export const SUBSCRIPTION_STATUSES = [
+  'active',
+  'canceled',
+  'incomplete',
+  'incomplete_expired',
+  'past_due',
+  'paused',
+  'trialing',
+  'unpaid'
+] as const;
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+
 export const subscriptions = sqliteTable('subscriptions', {
   id: text('id').primaryKey(),
   userId: text('user_id')
@@ -123,7 +143,9 @@ export const subscriptions = sqliteTable('subscriptions', {
   plan: text('plan', { enum: ['free', 'solo', 'pro', 'team'] })
     .notNull()
     .default('free'),
-  status: text('status').notNull().default('active'),
+  status: text('status', { enum: SUBSCRIPTION_STATUSES })
+    .notNull()
+    .default('active'),
   currentPeriodEnd: integer('current_period_end', { mode: 'timestamp' }),
   trialEndsAt: integer('trial_ends_at', { mode: 'timestamp' }),
   lastSyncedAt: integer('last_synced_at', { mode: 'timestamp' }),

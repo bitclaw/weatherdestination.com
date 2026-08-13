@@ -316,9 +316,21 @@ describe('reconcileBillingSubscriptions - already correct state', () => {
 
 describe('parity: webhook handlers vs reconciler produce same state', () => {
   const updateCases = [
-    { status: 'active', expectedPlan: 'free' as const, expectedAccess: true },
-    { status: 'trialing', expectedPlan: 'free' as const, expectedAccess: true },
-    { status: 'past_due', expectedPlan: 'free' as const, expectedAccess: false }
+    {
+      status: 'active' as const,
+      expectedPlan: 'free' as const,
+      expectedAccess: true
+    },
+    {
+      status: 'trialing' as const,
+      expectedPlan: 'free' as const,
+      expectedAccess: true
+    },
+    {
+      status: 'past_due' as const,
+      expectedPlan: 'free' as const,
+      expectedAccess: false
+    }
   ];
 
   for (const { status, expectedPlan, expectedAccess } of updateCases) {
