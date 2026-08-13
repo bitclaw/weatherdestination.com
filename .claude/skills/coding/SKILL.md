@@ -88,6 +88,7 @@ src/features/<name>/
 | Components PascalCase | `myComponent` | `MyComponent` |
 | Functions camelCase | `MyFunction` | `myFunction` |
 | Directories kebab-case | `MyFeature/` | `my-feature/` |
+| Nested ternaries | `a ? b : c ? d : e` | `if`/`else`, or a mapping object for 3+ cases |
 
 ### Imports
 
@@ -98,6 +99,15 @@ src/features/<name>/
 ### No Abstractions for Single Use
 
 Before extracting a helper, ask: is it used more than once? Does it add meaningful logic? If no to either, inline it.
+
+### Refactoring Discipline
+
+Before changing working code that isn't the thing you were asked to fix, verify all three:
+1. The original has a **real bug or safety issue** , not just "looks wrong" or "could be cleaner"
+2. The replacement is **provably safer** , not just syntactically different
+3. The fix doesn't introduce **new problems** , silent defaults, weaker types, fabricated context
+
+If not all three, leave it alone. A cast that's now redundant isn't wrong; a pattern that matches a documented convention isn't a bug just because a different approach also exists. "Matches existing convention" is a fine answer when the convention itself is sound , it's not a fine answer when the convention itself is the thing being questioned. Check which one you're in before answering.
 
 ### UI Components — Search Before Create
 
@@ -111,6 +121,29 @@ This applies with the same force as the barrel-import rule above , duplicated co
 ### Error Handling
 
 Server functions return `ok(data)` or `err(ERROR_CODES.CODE, 'Human message')` from `@bitclaw/result`. Never throw from a server function: callers check `.ok` / `.data` or `.ok` / `.code` + `.message` on the result. Error codes live in `src/lib/constants/errors.ts` , always use `ERROR_CODES.*` constants, never raw strings.
+
+**Calling a server function from a component**, the shape below is the standard , `try/catch` for network/thrown errors, an explicit `if (!result.ok)` check for business errors (a rejected `Result` is not a thrown exception, `.catch()`/`onError` never sees it):
+
+```ts
+const handleBuyOnce = async (priceId: string) => {
+  setError(null);
+  setLoading(priceId);
+  try {
+    const result = await createOneTimeCheckoutFn({ data: { priceId } });
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+    window.location.href = result.data.url;
+  } catch (caught: unknown) {
+    setError(caught instanceof Error ? caught.message : 'Failed to open checkout');
+  } finally {
+    setLoading(null);
+  }
+};
+```
+
+Reference: `src/features/billing/pages/index.tsx`'s `handleBuyOnce`/`handleUpgrade`/`handleManage`.
 
 ### UUID Generation
 
@@ -142,6 +175,118 @@ React Compiler is active. Do NOT add `useMemo` or `useCallback` for performance.
 - `useMemo` for impure computations frozen at mount (e.g., `Math.random()` seeds)
 
 Everything else is redundant.
+
+### TanStack Query: Route Data Loading
+
+Every data-dependent route follows the `queryOptions` factory + `ensureQueryData` (loader) + `useSuspenseQuery` (component) pattern , never a bare `useQuery` for primary route data.
+
+| Step | Where | What |
+|------|-------|------|
+| 1. Define queryOptions | Feature barrel (`index.ts`) or `src/server/functions/` | Factory with `queryKey` + `queryFn` + `staleTime` |
+| 2. Load in `beforeLoad`/`loader` | Route file | `await context.queryClient.ensureQueryData(myQueryOptions)` |
+| 3. Read in component | Component body | `useSuspenseQuery(myQueryOptions)` , data guaranteed, never `undefined` |
+
+```ts
+// src/server/functions/bootstrap.ts
+export const bootstrapQueryOptions = queryOptions({
+  queryKey: bootstrapQueryKey(),
+  queryFn: () => getBootstrapDataFn(),
+  staleTime: Number.POSITIVE_INFINITY
+});
+
+// src/routes/_app.tsx , beforeLoad
+const result = await context.queryClient.ensureQueryData(bootstrapQueryOptions);
+
+// component , data always defined, no loading guard needed
+const { data } = useSuspenseQuery(bootstrapQueryOptions);
+```
+
+`useQuery` (not suspense) is fine for secondary, non-route-blocking data. See CLAUDE.md's "Query Keys" section for key-factory naming and placement , this section is about the load/read contract, that one's about the key itself.
+
+### Avoid useEffect
+
+[You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect) , prefer TanStack Router loaders, `useQuery`/`useSuspenseQuery`, event handlers, or derived state.
+
+| Scenario | Wrong | Right |
+|----------|-------|-------|
+| Data fetching | `useEffect(() => fetch(...), [id])` | TanStack Router loader or `useSuspenseQuery` |
+| Derived state | `useEffect(() => setFull(first + last), [first, last])` | `const full = first + last` |
+| Responding to events | `useEffect(() => { if (submitted) save() }, [submitted])` | Call `save()` in the event handler |
+| Resetting state on prop change | `useEffect(() => setVal(prop), [prop])` | `key={prop}` on the component |
+
+**`useEffect` IS appropriate for**: event listeners with cleanup (`AbortController`), timers, external subscriptions, DOM measurements via refs. The polling pattern in `src/features/billing/hooks/use-billing-poll.ts` (`useEffect` + `setInterval` + `router.invalidate()` to auto-refresh during a transient state) is exactly this , a legitimate external-timer use, not a violation of this rule.
+
+### React: State
+
+| Rule | Wrong | Right |
+|------|-------|-------|
+| Descriptive state names | `const [state, setState] = useState(...)` | `const [attempts, setAttempts] = useState(...)` |
+| No side effects in setters | `setState(prev => { save(prev); return next })` | `setState(next)` + `useEffect` to sync |
+| Derived state over redundant state | Two counters tracking related things | One counter, derive the other |
+
+State setter callbacks must be pure. To persist to storage, sync a ref, or call an API when state changes, use a `useEffect` that watches the state , don't do it inside the setter itself.
+
+### React: Navigation
+
+| Rule | Wrong | Right |
+|------|-------|-------|
+| Leaving a completed step | `router.navigate({ to: '/next' })` | `router.navigate({ to: '/next', replace: true })` |
+
+When navigating away from a step the user intentionally completed (onboarding, checkout, multi-step forms), use `replace: true` so browser-back can't re-enter the completed step. Reference: `src/routes/onboarding.tsx`'s `handleComplete`.
+
+### Forms (TanStack Form)
+
+Field-level Zod validators, not a form-level adapter:
+
+```ts
+const form = useForm({
+  defaultValues: { name: user.name ?? '' },
+  onSubmit: ({ value }) => { /* ... */ }
+});
+
+<form.Field name="name" validators={{ onChange: z.string().max(100) }}>
+  {field => (
+    <FormField
+      error={field.state.meta.errors[0]?.toString()}
+      htmlFor="name"
+      label="Display name"
+    >
+      <input
+        id="name"
+        onBlur={field.handleBlur}
+        onChange={e => field.handleChange(e.target.value)}
+        value={field.state.value}
+      />
+    </FormField>
+  )}
+</form.Field>
+```
+
+Reference: `src/routes/onboarding.tsx`.
+
+### Components
+
+**9-step ordering , every component, every time:**
+
+1. Module-level constants
+2. External/fetched data functions (`queryOptions` factories)
+3. Type definitions
+4. Component function signature
+5. Hooks (`useState`, `useSuspenseQuery`, etc.)
+6. Local variables / derived state
+7. Internal handler functions
+8. Effects (`useEffect`)
+9. JSX return
+
+### Styling (Tailwind)
+
+| Rule | Wrong | Right |
+|------|-------|-------|
+| Status colors | `text-green-500`, `bg-red-50` | Design tokens: `text-destructive`, `bg-muted`, `text-primary-foreground` |
+| Error/status banners | Inline `border-red-200 bg-red-50` div | `<StatusBanner>`/`<ErrorBanner>` component |
+| Color without dark-mode support | `bg-white text-black` | `bg-background text-foreground` |
+
+Reach for a design token (`bg-primary`, `text-muted-foreground`, etc.) before a raw Tailwind color , tokens carry dark-mode support and stay consistent with the rest of the app; raw colors silently break in dark mode and drift from the palette.
 
 ### URL State (validateSearch)
 
