@@ -2,6 +2,7 @@ import { err, ok } from '@bitclaw/result';
 import { createServerFn } from '@tanstack/react-start';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { requireFeatureFlagEnabled } from '@/features/feature-flags/server/feature-flags.server';
 import { ERROR_CODES } from '@/lib/constants';
 import { db } from '@/lib/db';
 import { subscriptions } from '@/lib/db/schema';
@@ -31,6 +32,8 @@ export const getUploadUrlFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(db, 'uploads_enabled');
+    if (!flag.ok) return flag;
 
     const bucket = getS3Bucket();
     if (!bucket)
@@ -103,6 +106,8 @@ export const addUploadToDbFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(db, 'uploads_enabled');
+    if (!flag.ok) return flag;
 
     if (!data.s3Key.startsWith(`${user.id}/`))
       return err(ERROR_CODES.VALIDATION_ERROR, 'Invalid upload key');
@@ -158,6 +163,8 @@ export const deleteUploadFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser();
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    const flag = await requireFeatureFlagEnabled(db, 'uploads_enabled');
+    if (!flag.ok) return flag;
 
     const bucket = getS3Bucket();
     if (!bucket)

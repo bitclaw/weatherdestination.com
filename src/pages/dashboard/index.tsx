@@ -92,7 +92,7 @@ export const DashboardPage = ({ user, hasAccess, plan, flags }: Props) => (
                 </Link>
               );
             })}
-          {config.uploads.enabled && (
+          {flags.uploads_enabled && config.uploads.enabled && (
             <Link to="/dashboard/uploads">
               <Card className="h-full transition-colors hover:bg-muted/50">
                 <CardHeader>

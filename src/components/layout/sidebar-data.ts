@@ -20,6 +20,7 @@ import {
   Wrench,
   Zap
 } from 'lucide-react';
+import { config } from '@/config';
 import type { NavGroup, NavLink } from './types';
 
 // flags defaults to {} (nothing enabled) rather than being required - two
@@ -50,12 +51,24 @@ export const getSidebarData = (
             }
           ]
         : []),
-      { title: 'Audit Log', url: '/dashboard/audit-log', icon: ScrollText },
-      { title: 'Apps', url: '/dashboard/apps', icon: AppWindow },
+      ...(flags.audit_log_enabled
+        ? [
+            {
+              title: 'Audit Log',
+              url: '/dashboard/audit-log',
+              icon: ScrollText
+            }
+          ]
+        : []),
+      ...(flags.apps_enabled
+        ? [{ title: 'Apps', url: '/dashboard/apps', icon: AppWindow }]
+        : []),
       ...(flags.notes_enabled
         ? [{ title: 'Notes', url: '/dashboard/notes', icon: NotebookPen }]
         : []),
-      { title: 'Files', url: '/dashboard/uploads', icon: Upload },
+      ...(flags.uploads_enabled && config.uploads.enabled
+        ? [{ title: 'Files', url: '/dashboard/uploads', icon: Upload }]
+        : []),
       { title: 'Billing', url: '/dashboard/billing', icon: CreditCard },
       {
         title: 'Settings',
