@@ -71,9 +71,10 @@ function OneTimeBillingPage({
   const { data: purchase } = useSuspenseQuery(oneTimePurchaseQueryOptions);
   // Settlement must come from live query data: the hasAccess prop is route
   // context, frozen for this mount, so it alone can never observe the webhook.
+  const isSettled = hasAccess || purchase !== null;
   useBillingPoll({
     success,
-    isSettled: hasAccess || purchase !== null,
+    isSettled,
     queryClient
   });
 
@@ -109,7 +110,13 @@ function OneTimeBillingPage({
             <p className="text-muted-foreground mt-1">Manage your purchase.</p>
           </div>
 
-          {success && (
+          {success && !isSettled && (
+            <StatusBanner variant="info">
+              Payment processing… this can take a few seconds.
+            </StatusBanner>
+          )}
+
+          {success && isSettled && (
             <StatusBanner variant="success">
               Purchase successful: you now have lifetime access.
             </StatusBanner>
@@ -153,9 +160,10 @@ function SubscriptionBillingPage({
   // Settlement must come from live query data: the plan prop is route context,
   // frozen for this mount, so it alone can never observe the webhook.
   const livePlan = sub?.plan ?? 'free';
+  const isSettled = plan !== 'free' || livePlan !== 'free';
   useBillingPoll({
     success,
-    isSettled: plan !== 'free' || livePlan !== 'free',
+    isSettled,
     queryClient
   });
 
@@ -216,7 +224,13 @@ function SubscriptionBillingPage({
             </p>
           </div>
 
-          {success && (
+          {success && !isSettled && (
+            <StatusBanner variant="info">
+              Payment processing… this can take a few seconds.
+            </StatusBanner>
+          )}
+
+          {success && isSettled && (
             <StatusBanner variant="success">
               Payment successful: your Pro access is now active.
             </StatusBanner>

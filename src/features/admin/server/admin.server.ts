@@ -8,7 +8,7 @@ import {
   or,
   type SQL
 } from 'drizzle-orm';
-import type { PlanId } from '@/config';
+import type { PlanKey } from '@/config';
 import type { db as sharedDb } from '@/lib/db';
 import { subscriptions, users } from '@/lib/db/schema';
 
@@ -24,7 +24,7 @@ export type AdminUser = {
   banned: boolean;
   banReason: string | null;
   banExpires: Date | null;
-  plan: 'free' | PlanId;
+  plan: PlanKey;
   createdAt: Date;
 };
 
@@ -118,7 +118,7 @@ const toAdminUser = (r: AdminUserRow): AdminUser => ({
   name: r.name,
   emailVerified: r.emailVerified ?? false,
   hasAccess: r.hasAccess,
-  plan: (r.plan ?? 'free') as 'free' | PlanId,
+  plan: (r.plan ?? 'free') as PlanKey,
   role: r.role ?? 'user',
   banned: r.banned ?? false,
   banReason: r.banReason ?? null,

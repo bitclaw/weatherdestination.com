@@ -6,6 +6,7 @@ import {
   text,
   uniqueIndex
 } from 'drizzle-orm/sqlite-core';
+import { PLAN_KEYS } from '@/config';
 
 // ---------------------------------------------------------------------------
 // better-auth tables: managed by better-auth, do not rename columns
@@ -115,10 +116,11 @@ export const verifications = sqliteTable(
 // (node_modules/stripe/cjs/resources/Subscriptions.d.ts, the actual field
 // type - not the broader list-filter type elsewhere in the same file that
 // also includes 'all'/'ended', which are query params, not real states).
-// Exported (unlike `plan`'s inline array below) because multiple other
-// files need to narrow their own local `status` types against this same
-// set - billing.rules.server.ts previously re-widened it to `string | null`
-// with zero compile-time protection against a typo like 'trailing'.
+// Exported because multiple other files need to narrow their own local
+// `status` types against this same set - billing.rules.server.ts
+// previously re-widened it to `string | null` with zero compile-time
+// protection against a typo like 'trailing'. `plan` below gets the same
+// treatment via config.ts's PLAN_KEYS, for the same reason.
 export const SUBSCRIPTION_STATUSES = [
   'active',
   'canceled',
@@ -140,9 +142,7 @@ export const subscriptions = sqliteTable('subscriptions', {
   stripeCustomerId: text('stripe_customer_id').unique(),
   stripeSubscriptionId: text('stripe_subscription_id').unique(),
   stripePriceId: text('stripe_price_id'),
-  plan: text('plan', { enum: ['free', 'solo', 'pro', 'team'] })
-    .notNull()
-    .default('free'),
+  plan: text('plan', { enum: PLAN_KEYS }).notNull().default('free'),
   status: text('status', { enum: SUBSCRIPTION_STATUSES })
     .notNull()
     .default('active'),
@@ -256,7 +256,7 @@ export const payments = sqliteTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     stripeInvoiceId: text('stripe_invoice_id').unique().notNull(),
     stripeCustomerId: text('stripe_customer_id'),
-    plan: text('plan', { enum: ['free', 'solo', 'pro', 'team'] }).notNull(),
+    plan: text('plan', { enum: PLAN_KEYS }).notNull(),
     amount: integer('amount').notNull(),
     currency: text('currency').notNull().default('usd'),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull()

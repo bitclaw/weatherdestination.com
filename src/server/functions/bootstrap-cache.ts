@@ -1,5 +1,5 @@
 import { TTLCache } from '@bitclaw/sqlite/ttl-cache';
-import type { PlanId } from '@/config';
+import type { PlanKey } from '@/config';
 
 // Split from bootstrap.ts so server-side mutations (webhook handlers, admin,
 // onboarding) can invalidate the cache without importing the createServerFn /
@@ -12,7 +12,7 @@ export type BootstrapPayload = {
     image: string | null;
   } | null;
   hasAccess: boolean;
-  plan: 'free' | PlanId;
+  plan: PlanKey;
   isTrialing: boolean;
   trialEndsAt: Date | null;
   isAdmin: boolean;

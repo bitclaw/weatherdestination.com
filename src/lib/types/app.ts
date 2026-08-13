@@ -1,4 +1,4 @@
-import type { PlanId } from '@/config';
+import type { PlanKey } from '@/config';
 
 export type AppUser = {
   id: string;
@@ -11,7 +11,7 @@ export type AppRouteContext = {
   queryClient: import('@tanstack/react-query').QueryClient;
   user: AppUser;
   hasAccess: boolean;
-  plan: 'free' | PlanId;
+  plan: PlanKey;
   isTrialing: boolean;
   trialEndsAt: Date | null;
   isAdmin: boolean;

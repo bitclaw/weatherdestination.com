@@ -3,7 +3,6 @@ import { queryOptions } from '@tanstack/react-query';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
 import { eq } from 'drizzle-orm';
-import type { PlanId } from '@/config';
 import { ERROR_CODES } from '@/lib/constants';
 import { db } from '@/lib/db';
 import { subscriptions, users } from '@/lib/db/schema';
@@ -92,7 +91,7 @@ export const getBootstrapDataFn = createServerFn({ method: 'GET' }).handler(
         image: user.image ?? null
       },
       hasAccess: dbUser?.hasAccess ?? false,
-      plan: (sub?.plan ?? 'free') as 'free' | PlanId,
+      plan: sub?.plan ?? 'free',
       isTrialing: sub?.status === 'trialing',
       trialEndsAt: sub?.trialEndsAt ?? null,
       isAdmin: adminEmails.includes(user.email),

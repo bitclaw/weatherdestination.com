@@ -5,7 +5,18 @@
 // =============================================================================
 
 export type PlanId = 'solo' | 'pro' | 'team' | 'report';
-export type PlanKey = 'free' | 'solo' | 'pro' | 'team' | 'report';
+// Single source of truth for the `plan` column's enum in schema.ts - keep
+// them in sync by having schema.ts import this value, not a second
+// hand-typed array (this is what SUBSCRIPTION_STATUSES/schema.ts's `status`
+// column already does for the analogous drift risk). Widens schema.ts's
+// previously-narrower inline array (which excluded 'report') to match what
+// PlanKey already promised app-wide - harmless: Drizzle's sqlite enum
+// option is TypeScript-only, and nothing writes 'report' into those
+// subscription/recurring-payment columns today (it's a one-time purchase
+// tracked via `purchases.stripePriceId` instead), so this only makes the
+// column's type honest about what PlanKey already allows.
+export const PLAN_KEYS = ['free', 'solo', 'pro', 'team', 'report'] as const;
+export type PlanKey = (typeof PLAN_KEYS)[number];
 export type PlanLimits = {
   maxNotes: number;
   maxFileUploads: number;
