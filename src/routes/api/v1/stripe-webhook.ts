@@ -29,7 +29,10 @@ export const Route = createFileRoute('/api/v1/stripe-webhook')({
           await handleStripeWebhook(body, signature);
           return Response.json({ received: true });
         } catch (error: unknown) {
-          log.error({ error }, 'Stripe webhook processing failed');
+          // `err`, not `error` - pino only auto-serializes the reserved
+          // `err` key (message/stack extraction). Logging under `error`
+          // silently produces an empty {} for every failure.
+          log.error({ err: error }, 'Stripe webhook processing failed');
           if (error instanceof WebhookConfigError) {
             return Response.json(
               { error: 'Server configuration error' },

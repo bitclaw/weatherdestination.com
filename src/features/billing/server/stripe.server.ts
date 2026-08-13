@@ -31,7 +31,19 @@ export const handleStripeWebhook = async (
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    // constructEvent (sync) resolves to Stripe SDK's SubtleCryptoProvider
+    // under Bun (not NodeCryptoProvider - Bun isn't detected as Node), which
+    // only supports async HMAC computation. The sync call throws
+    // CryptoProviderOnlySupportsAsyncError unconditionally, regardless of
+    // whether the secret/signature are actually correct - this shipped a 9
+    // day production outage on a sibling deploy of this exact code before
+    // being caught. constructEventAsync is Stripe's own documented fix for
+    // edge/non-Node runtimes.
+    event = await stripe.webhooks.constructEventAsync(
+      body,
+      signature,
+      webhookSecret
+    );
   } catch {
     throw new Error('Invalid webhook signature');
   }
