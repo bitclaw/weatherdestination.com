@@ -15,7 +15,8 @@ import {
   type getSubscriptionFn,
   oneTimePurchaseQueryOptions,
   PlanBadge,
-  subscriptionQueryOptions
+  subscriptionQueryOptions,
+  syncCheckoutSessionFn
 } from '@/features/billing';
 import type { AppRouteContext } from '@/lib/types';
 import { useBillingPoll } from '../hooks/use-billing-poll';
@@ -26,6 +27,7 @@ type Props = Pick<
 > & {
   success: boolean;
   canceled: boolean;
+  sessionId: string | undefined;
 };
 
 export function BillingPage({
@@ -34,7 +36,8 @@ export function BillingPage({
   isTrialing,
   trialEndsAt,
   success,
-  canceled
+  canceled,
+  sessionId
 }: Props) {
   const isOneTime = config.billing.mode === 'one_time';
 
@@ -43,6 +46,7 @@ export function BillingPage({
       <OneTimeBillingPage
         canceled={canceled}
         hasAccess={hasAccess}
+        sessionId={sessionId}
         success={success}
       />
     );
@@ -54,6 +58,7 @@ export function BillingPage({
       hasAccess={hasAccess}
       isTrialing={isTrialing}
       plan={plan}
+      sessionId={sessionId}
       success={success}
       trialEndsAt={trialEndsAt}
     />
@@ -63,8 +68,9 @@ export function BillingPage({
 function OneTimeBillingPage({
   hasAccess,
   success,
-  canceled
-}: Pick<Props, 'hasAccess' | 'success' | 'canceled'>) {
+  canceled,
+  sessionId
+}: Pick<Props, 'hasAccess' | 'success' | 'canceled' | 'sessionId'>) {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -75,7 +81,12 @@ function OneTimeBillingPage({
   useBillingPoll({
     success,
     isSettled,
-    queryClient
+    queryClient,
+    onPollTick: sessionId
+      ? async () => {
+          await syncCheckoutSessionFn({ data: { sessionId } });
+        }
+      : undefined
   });
 
   const handleBuyOnce = async (priceId: string) => {
@@ -148,10 +159,17 @@ function SubscriptionBillingPage({
   isTrialing,
   trialEndsAt,
   success,
-  canceled
+  canceled,
+  sessionId
 }: Pick<
   Props,
-  'hasAccess' | 'plan' | 'isTrialing' | 'trialEndsAt' | 'success' | 'canceled'
+  | 'hasAccess'
+  | 'plan'
+  | 'isTrialing'
+  | 'trialEndsAt'
+  | 'success'
+  | 'canceled'
+  | 'sessionId'
 >) {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -164,7 +182,12 @@ function SubscriptionBillingPage({
   useBillingPoll({
     success,
     isSettled,
-    queryClient
+    queryClient,
+    onPollTick: sessionId
+      ? async () => {
+          await syncCheckoutSessionFn({ data: { sessionId } });
+        }
+      : undefined
   });
 
   const handleManage = async () => {

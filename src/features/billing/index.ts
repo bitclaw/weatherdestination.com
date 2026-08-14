@@ -14,7 +14,8 @@ export { UpgradeGate } from './components/UpgradeGate';
 export {
   createBillingPortalFn,
   createCheckoutSessionFn,
-  createOneTimeCheckoutFn
+  createOneTimeCheckoutFn,
+  syncCheckoutSessionFn
 } from './server/billing.mutations';
 export {
   getOneTimePurchaseFn,

@@ -19,7 +19,8 @@ const toTrueOrUndefined = (v: unknown) =>
   v === 'true' || v === true ? true : undefined;
 const searchSchema = z.object({
   success: z.preprocess(toTrueOrUndefined, z.literal(true).optional()),
-  canceled: z.preprocess(toTrueOrUndefined, z.literal(true).optional())
+  canceled: z.preprocess(toTrueOrUndefined, z.literal(true).optional()),
+  session_id: z.string().optional()
 });
 
 export const Route = createFileRoute('/_app/dashboard/billing')({
@@ -37,13 +38,14 @@ export const Route = createFileRoute('/_app/dashboard/billing')({
   component: () => {
     const { hasAccess, plan, isTrialing, trialEndsAt } =
       Route.useRouteContext() as AppRouteContext;
-    const { success, canceled } = Route.useSearch();
+    const { success, canceled, session_id: sessionId } = Route.useSearch();
     return (
       <BillingPage
         canceled={canceled ?? false}
         hasAccess={hasAccess}
         isTrialing={isTrialing}
         plan={plan}
+        sessionId={sessionId}
         success={success ?? false}
         trialEndsAt={trialEndsAt}
       />

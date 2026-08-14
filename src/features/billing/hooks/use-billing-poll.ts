@@ -28,17 +28,24 @@ export function hasPollTimedOut(startMs: number, nowMs: number): boolean {
  * `isSettled` must be derived from live query data (not route context, which
  * is frozen for the mount) or the poll can never observe settlement.
  *
+ * `onPollTick`, if provided, runs before the invalidations on each tick -
+ * use it to actively reconcile against Stripe (e.g. syncCheckoutSessionFn)
+ * instead of passively waiting for the webhook, so a delayed webhook
+ * delivery doesn't leave the page stuck past the 30s timeout.
+ *
  * Usage:
  *   useBillingPoll({ success, isSettled, queryClient });
  */
 export function useBillingPoll({
   success,
   isSettled,
-  queryClient
+  queryClient,
+  onPollTick
 }: {
   success: boolean;
   isSettled: boolean;
   queryClient: QueryClient;
+  onPollTick?: () => Promise<void>;
 }): void {
   const router = useRouter();
   const pollStartRef = useRef<number | null>(null);
@@ -51,16 +58,17 @@ export function useBillingPoll({
     }
     const startMs = pollStartRef.current;
 
-    const timer = setInterval(() => {
+    const timer = setInterval(async () => {
       if (hasPollTimedOut(startMs, Date.now())) {
         clearInterval(timer);
         return;
       }
+      if (onPollTick) await onPollTick();
       queryClient.invalidateQueries({ queryKey: subscriptionQueryKey() });
       queryClient.invalidateQueries({ queryKey: bootstrapQueryKey() });
       router.invalidate();
     }, POLL_INTERVAL_MS);
 
     return () => clearInterval(timer);
-  }, [success, isSettled, queryClient, router]);
+  }, [success, isSettled, queryClient, router, onPollTick]);
 }

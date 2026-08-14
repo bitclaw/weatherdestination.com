@@ -11,6 +11,7 @@ import { hasUsedTrialBefore } from '@/lib/operations/trial-abuse.server';
 import { createRateLimiter } from '@/server/rate-limit';
 import { requireUser } from '@/server/require-user';
 import { resolveTrialDays } from './billing.server';
+import { handleCheckoutCompleted } from './stripe-checkout.server';
 import { stripe } from './stripe-shared.server';
 
 // Two tiers per limiter, same reasoning as admin.mutations.ts's
@@ -21,6 +22,11 @@ const checkoutLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
 const userCheckoutLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
 const portalLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
 const userPortalLimiter = createRateLimiter({ windowMs: 60_000, max: 10 });
+// Higher ceiling than the checkout/portal limiters above - this one is
+// called on every 3s useBillingPoll tick after a real checkout (~10 ticks
+// per 30s poll window), not just once per user action.
+const syncLimiter = createRateLimiter({ windowMs: 60_000, max: 20 });
+const userSyncLimiter = createRateLimiter({ windowMs: 60_000, max: 20 });
 
 export const createCheckoutSessionFn = createServerFn({ method: 'POST' })
   .validator(
@@ -173,4 +179,39 @@ export const createBillingPortalFn = createServerFn({ method: 'POST' })
     }
 
     return ok({ url: portal.url });
+  });
+
+// Active reconciliation, called on each useBillingPoll tick after a
+// checkout redirect: reuses the exact same handleCheckoutCompleted the
+// Stripe webhook calls (already idempotent - see
+// docs/warpkit/patterns/webhook-replay.md), so there's one code path that
+// ever applies a checkout session to the DB, not two that could drift.
+// Closes the gap where a delayed webhook left the billing page stuck on
+// "Payment processing…" until a manual reload.
+export const syncCheckoutSessionFn = createServerFn({ method: 'POST' })
+  .validator(z.object({ sessionId: z.string() }))
+  .handler(async ({ data }) => {
+    if (syncLimiter.check())
+      return err(ERROR_CODES.RATE_LIMITED, 'Too many requests');
+    const user = await requireUser();
+    if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
+    if (userSyncLimiter.check(user.id))
+      return err(ERROR_CODES.RATE_LIMITED, 'Too many requests');
+
+    let session: Awaited<ReturnType<typeof stripe.checkout.sessions.retrieve>>;
+    try {
+      session = await stripe.checkout.sessions.retrieve(data.sessionId);
+    } catch {
+      return ok({ synced: false });
+    }
+
+    // A session belongs to whoever's userId is in its own metadata, not
+    // whoever happens to know the session_id - same shape as the workspace
+    // ownership check this pattern is ported from.
+    if (session.metadata?.userId !== user.id) {
+      return ok({ synced: false });
+    }
+
+    await handleCheckoutCompleted(session, db);
+    return ok({ synced: true });
   });
