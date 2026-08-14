@@ -28,9 +28,34 @@ const getStoredTheme = (): Theme => {
     : config.theme.defaultMode;
 };
 
+// Must match styles.css's :root/.dark --background and --foreground, and
+// stay in sync with __root.tsx's SSR init script, which paints these same
+// values as inline styles on <html> to win the pre-stylesheet paint race.
+// That inline style outlives hydration - it's never removed - so if this
+// function only toggled the `dark` class, the inline color/background from
+// the initial page load would keep overriding the new theme's CSS variables
+// (inline style beats any class-based rule) until the next full reload.
+const THEME_PAINT: Record<
+  'light' | 'dark',
+  { background: string; foreground: string }
+> = {
+  light: {
+    background: 'oklch(98% 0.005 230)',
+    foreground: 'oklch(14% 0.04 230)'
+  },
+  dark: {
+    background: 'oklch(14% 0.025 230)',
+    foreground: 'oklch(93% 0.01 230)'
+  }
+};
+
 const applyTheme = (theme: Theme) => {
   const resolved = theme === 'system' ? getSystemTheme() : theme;
-  document.documentElement.classList.toggle('dark', resolved === 'dark');
+  const html = document.documentElement;
+  html.classList.toggle('dark', resolved === 'dark');
+  html.style.colorScheme = resolved;
+  html.style.backgroundColor = THEME_PAINT[resolved].background;
+  html.style.color = THEME_PAINT[resolved].foreground;
 };
 
 const NEXT_THEME: Record<Theme, 'light' | 'dark'> = {

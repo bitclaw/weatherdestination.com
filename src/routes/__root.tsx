@@ -53,8 +53,8 @@ type RouterContext = {
 // state. Values must match styles.css's :root/.dark --background and
 // --foreground - see use-theme.test.ts's sync check.
 const THEME_INIT_SCRIPTS: Record<'light' | 'dark', string> = {
-  light: `(function(){var t=localStorage.getItem('theme');var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme:dark)').matches);var h=document.documentElement;if(d){h.classList.add('dark')}h.style.colorScheme=d?'dark':'light';h.style.backgroundColor=d?'oklch(14% 0.025 265)':'oklch(98% 0.005 265)';h.style.color=d?'oklch(93% 0.01 265)':'oklch(14% 0.04 265)'})()`,
-  dark: `(function(){var t=localStorage.getItem('theme');var d=t!=='light'&&!(t==='system'&&!matchMedia('(prefers-color-scheme:dark)').matches);var h=document.documentElement;if(d){h.classList.add('dark')}h.style.colorScheme=d?'dark':'light';h.style.backgroundColor=d?'oklch(14% 0.025 265)':'oklch(98% 0.005 265)';h.style.color=d?'oklch(93% 0.01 265)':'oklch(14% 0.04 265)'})()`
+  light: `(function(){var t=localStorage.getItem('theme');var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme:dark)').matches);var h=document.documentElement;if(d){h.classList.add('dark')}h.style.colorScheme=d?'dark':'light';h.style.backgroundColor=d?'oklch(14% 0.025 230)':'oklch(98% 0.005 230)';h.style.color=d?'oklch(93% 0.01 230)':'oklch(14% 0.04 230)'})()`,
+  dark: `(function(){var t=localStorage.getItem('theme');var d=t!=='light'&&!(t==='system'&&!matchMedia('(prefers-color-scheme:dark)').matches);var h=document.documentElement;if(d){h.classList.add('dark')}h.style.colorScheme=d?'dark':'light';h.style.backgroundColor=d?'oklch(14% 0.025 230)':'oklch(98% 0.005 230)';h.style.color=d?'oklch(93% 0.01 230)':'oklch(14% 0.04 230)'})()`
 };
 const themeInitScript: string = THEME_INIT_SCRIPTS[config.theme.defaultMode];
 
