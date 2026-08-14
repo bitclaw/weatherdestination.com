@@ -146,7 +146,7 @@ type ConfirmOptions = {
 type ConfirmState = ConfirmOptions & { open: boolean };
 
 export function useConfirm() {
-  const [state, setState] = useState<ConfirmState>({
+  const [dialogState, setDialogState] = useState<ConfirmState>({
     open: false,
     title: '',
     description: ''
@@ -156,29 +156,29 @@ export function useConfirm() {
   const confirm = (options: ConfirmOptions): Promise<boolean> => {
     return new Promise(resolve => {
       resolveRef.current = resolve;
-      setState({ ...options, open: true });
+      setDialogState({ ...options, open: true });
     });
   };
 
   const handleConfirm = () => {
-    setState(prev => ({ ...prev, open: false }));
+    setDialogState(prev => ({ ...prev, open: false }));
     resolveRef.current?.(true);
     resolveRef.current = null;
   };
 
   const handleCancel = () => {
-    setState(prev => ({ ...prev, open: false }));
+    setDialogState(prev => ({ ...prev, open: false }));
     resolveRef.current?.(false);
     resolveRef.current = null;
   };
 
   const dialogProps = {
-    open: state.open,
-    title: state.title,
-    description: state.description,
-    confirmLabel: state.confirmLabel,
-    variant: state.variant,
-    checkboxLabel: state.checkboxLabel,
+    open: dialogState.open,
+    title: dialogState.title,
+    description: dialogState.description,
+    confirmLabel: dialogState.confirmLabel,
+    variant: dialogState.variant,
+    checkboxLabel: dialogState.checkboxLabel,
     onConfirm: handleConfirm,
     onCancel: handleCancel
   };

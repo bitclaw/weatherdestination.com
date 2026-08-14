@@ -1,25 +1,16 @@
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
-// success/warning use raw Tailwind colors with manual dark: overrides, not a
-// CSS token, because there is no --success/--warning token anywhere in
-// styles.css , only destructive is a first-class semantic color here. This
-// matches badge.tsx/toast.tsx's identical pattern; fixing only this file
-// would make it inconsistent with its own siblings, not less hardcoded.
 const variantStyles = {
   error: 'border-destructive/50 bg-destructive/10 text-destructive',
-  success:
-    'border-green-500/30 bg-green-500/10 text-green-800 dark:text-green-200',
-  warning:
-    'border-yellow-200 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200'
+  success: 'border-success/30 bg-success/10 text-success',
+  warning: 'border-warning/30 bg-warning/10 text-warning'
 } as const;
 
 const dismissStyles = {
   error: 'text-destructive/70 hover:text-destructive',
-  success:
-    'text-green-600/70 hover:text-green-800 dark:text-green-300/70 dark:hover:text-green-200',
-  warning:
-    'text-yellow-600/70 hover:text-yellow-800 dark:text-yellow-300/70 dark:hover:text-yellow-200'
+  success: 'text-success/70 hover:text-success',
+  warning: 'text-warning/70 hover:text-warning'
 } as const;
 
 type BannerProps = {

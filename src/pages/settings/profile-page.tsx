@@ -42,7 +42,7 @@ export function ProfilePage({ user }: Props) {
         }}
       >
         {saveSuccess && (
-          <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-200">
+          <div className="rounded-md border border-success/30 bg-success/10 p-3 text-sm text-success">
             Profile updated.
           </div>
         )}

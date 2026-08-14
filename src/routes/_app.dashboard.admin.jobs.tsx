@@ -51,9 +51,15 @@ export const Route = createFileRoute('/_app/dashboard/admin/jobs')({
 
 type Tab = 'active' | 'failed';
 
-function statusBadgeVariant(
+const statusBadgeVariant = (
   status: string
-): 'default' | 'secondary' | 'destructive' | 'warning' | 'success' | 'outline' {
+):
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'warning'
+  | 'success'
+  | 'outline' => {
   switch (status) {
     case 'done':
       return 'success';
@@ -70,7 +76,7 @@ function statusBadgeVariant(
     default:
       return 'default';
   }
-}
+};
 
 function JobManagementPage() {
   const router = useRouter();
@@ -195,37 +201,37 @@ function JobManagementPage() {
                 label: 'Pending',
                 value: stats.pending,
                 icon: Clock,
-                color: 'text-yellow-600'
+                color: 'text-warning'
               },
               {
                 label: 'Processing',
                 value: stats.processing,
                 icon: RefreshCw,
-                color: 'text-blue-600'
+                color: 'text-info'
               },
               {
                 label: 'Done',
                 value: stats.done,
                 icon: CheckCircle,
-                color: 'text-green-600'
+                color: 'text-success'
               },
               {
                 label: 'Failed',
                 value: stats.failed,
                 icon: XCircle,
-                color: 'text-red-600'
+                color: 'text-destructive'
               },
               {
                 label: 'Dead',
                 value: stats.dead,
                 icon: Ban,
-                color: 'text-red-800'
+                color: 'text-destructive'
               },
               {
                 label: 'Blocked',
                 value: stats.blocked,
                 icon: AlertTriangle,
-                color: 'text-orange-600'
+                color: 'text-warning'
               },
               {
                 label: 'Cancelled',
@@ -621,7 +627,7 @@ function FailedJobsTab({
                     #{job.id}
                   </td>
                   <td className="px-4 py-2 font-mono text-xs">{job.type}</td>
-                  <td className="max-w-xs truncate px-4 py-2 text-xs text-red-600">
+                  <td className="max-w-xs truncate px-4 py-2 text-xs text-destructive">
                     {job.error ?? '—'}
                   </td>
                   <td className="text-muted-foreground px-4 py-2 text-xs">

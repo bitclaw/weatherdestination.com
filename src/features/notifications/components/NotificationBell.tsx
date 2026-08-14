@@ -51,7 +51,7 @@ export const NotificationBell = () => {
         <Button className="relative" size="icon" variant="ghost">
           <Bell className="size-4" />
           {unreadCount > 0 && (
-            <span className="absolute right-1 top-1 flex size-2 rounded-full bg-blue-500" />
+            <span className="absolute right-1 top-1 flex size-2 rounded-full bg-info" />
           )}
           <span className="sr-only">Notifications</span>
         </Button>
@@ -88,7 +88,7 @@ export const NotificationBell = () => {
               >
                 <div className="flex items-center gap-2">
                   {n.read === 0 && (
-                    <span className="size-1.5 shrink-0 rounded-full bg-blue-500" />
+                    <span className="size-1.5 shrink-0 rounded-full bg-info" />
                   )}
                   <span
                     className={cn(

@@ -1,7 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { eq } from 'drizzle-orm';
-import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
 import { invalidateBootstrapCache } from '@/server/functions/bootstrap';
 
 // Flips a test user back to onboardingComplete: false between test runs,
@@ -19,6 +17,9 @@ export const Route = createFileRoute('/api/loadtest/reset-onboarding')({
         if (process.env.LOADTEST_AUTH_ENABLED !== 'true') {
           return Response.json({ error: 'Not found' }, { status: 404 });
         }
+
+        const { db } = await import('@/lib/db');
+        const { users } = await import('@/lib/db/schema');
 
         let body: { email?: string; password?: string };
         try {

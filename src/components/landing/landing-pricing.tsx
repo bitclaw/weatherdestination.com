@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { BillingIntervalToggle } from '@/components/landing/billing-interval-toggle';
 import { CheckoutButton } from '@/components/landing/checkout-button';
 import { AnimateIn } from '@/components/ui/animate-in';
+import type { StripePlan } from '@/config';
 import { config } from '@/config';
 
 // Exported for testing
@@ -16,6 +17,22 @@ export function getPricingGridClass(
   if (planCount === 3) return 'max-w-5xl lg:grid-cols-3';
   return 'max-w-6xl sm:grid-cols-2 lg:grid-cols-4';
 }
+
+const getDisplayPrice = (
+  plan: StripePlan,
+  isOneTime: boolean,
+  isYearly: boolean
+): number => {
+  if (isOneTime) return plan.oneTime?.price ?? 0;
+  if (isYearly) return plan.recurring?.yearlyPrice ?? 0;
+  return plan.recurring?.price ?? 0;
+};
+
+const getPriceSuffix = (isOneTime: boolean, isYearly: boolean): string => {
+  if (isOneTime) return 'one-time';
+  if (isYearly) return '/yr';
+  return '/mo';
+};
 
 export function LandingPricing() {
   const [isYearly, setIsYearly] = useState(false);
@@ -58,12 +75,8 @@ export function LandingPricing() {
         >
           {/* Plans from config */}
           {config.stripe.plans.map((plan, i) => {
-            const displayPrice = isOneTime
-              ? (plan.oneTime?.price ?? 0)
-              : isYearly
-                ? (plan.recurring?.yearlyPrice ?? 0)
-                : (plan.recurring?.price ?? 0);
-            const suffix = isOneTime ? 'one-time' : isYearly ? '/yr' : '/mo';
+            const displayPrice = getDisplayPrice(plan, isOneTime, isYearly);
+            const suffix = getPriceSuffix(isOneTime, isYearly);
             const equivalentMonthly =
               !isOneTime && isYearly && plan.recurring?.yearlyPrice
                 ? (plan.recurring.yearlyPrice / 12).toFixed(0)

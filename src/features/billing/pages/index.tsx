@@ -283,7 +283,7 @@ function OneTimeBillingSection({
       <div className="rounded-lg border p-4 space-y-2">
         <div className="flex items-center justify-between">
           <p className="font-medium">Access</p>
-          <span className="rounded-full bg-green-100 px-3 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-900 dark:text-green-200">
+          <span className="rounded-full bg-success/10 px-3 py-0.5 text-xs font-semibold text-success">
             Lifetime
           </span>
         </div>
@@ -324,7 +324,7 @@ function OneTimeBillingSection({
                     className="text-sm text-muted-foreground flex gap-2"
                     key={f}
                   >
-                    <span className="text-green-500">✓</span>
+                    <span className="text-success">✓</span>
                     {f}
                   </li>
                 ))}
@@ -430,7 +430,7 @@ function SubscriptionBillingSection({
                         className="text-sm text-muted-foreground flex gap-2"
                         key={f}
                       >
-                        <span className="text-green-500">✓</span>
+                        <span className="text-success">✓</span>
                         {f}
                       </li>
                     ))}

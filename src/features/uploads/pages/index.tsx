@@ -35,7 +35,7 @@ const formatBytes = (bytes: number): string => {
 
 const getFileIcon = (type: string) => {
   if (type.startsWith('image/'))
-    return <Image className="h-4 w-4 shrink-0 text-blue-500" />;
+    return <Image className="h-4 w-4 shrink-0 text-info" />;
   return <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />;
 };
 

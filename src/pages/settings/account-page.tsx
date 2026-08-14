@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { Monitor, Smartphone } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -17,11 +17,9 @@ import { ContentSection } from './content-section';
 type Props = { user: AppUser };
 
 export function AccountPage({ user: _user }: Props) {
-  const {
-    data,
-    isLoading: sessionsLoading,
-    refetch: refetchSessions
-  } = useQuery(accountSessionsQueryOptions);
+  const { data, refetch: refetchSessions } = useSuspenseQuery(
+    accountSessionsQueryOptions
+  );
 
   const [revokingToken, setRevokingToken] = useState<string | null>(null);
   const [isRevokingOthers, setIsRevokingOthers] = useState(false);
@@ -103,8 +101,8 @@ export function AccountPage({ user: _user }: Props) {
 
   const { data: currentSessionData } = authClient.useSession();
   const currentToken = currentSessionData?.session.token;
-  const sessions = data?.sessions ?? [];
-  const needsFreshSession = data?.needsFreshSession ?? false;
+  const sessions = data.sessions;
+  const needsFreshSession = data.needsFreshSession;
 
   return (
     <ContentSection
@@ -133,9 +131,7 @@ export function AccountPage({ user: _user }: Props) {
             )}
           </div>
 
-          {sessionsLoading ? (
-            <p className="text-muted-foreground text-sm">Loading…</p>
-          ) : needsFreshSession ? (
+          {needsFreshSession ? (
             <p className="text-muted-foreground text-sm">
               For security, sign in again to view and manage your active
               sessions.

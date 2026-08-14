@@ -67,6 +67,10 @@ const SidebarProvider = ({
 
   const [_open, _setOpen] = React.useState(defaultOpen);
   const open = openProp ?? _open;
+  // Vendored shadcn stock pattern - React Compiler makes both useCallbacks
+  // in this component redundant, but this file mirrors shadcn's upstream
+  // source closely on purpose to make future upstream diffs easy to apply;
+  // not a rule violation to clean up.
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === 'function' ? value(open) : value;

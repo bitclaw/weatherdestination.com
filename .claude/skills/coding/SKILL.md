@@ -78,6 +78,10 @@ src/features/<name>/
 **mutations.ts** , `createServerFn({ method: 'POST' })` only. All writes through `withWriteLock`.
 **rules.ts** , pure functions, no I/O. Only create if predicates are shared between queries and mutations; inline otherwise.
 
+**Carve-outs, both already in use, not violations**:
+- **Read-only features may omit `mutations.ts`** , nothing to write. Reference: `audit-log` (`server/audit-log.queries.ts` + `audit-log.server.ts`, no mutations file at all).
+- **Static/config-only features may omit `server/` entirely** , no server-side data of their own to query or mutate. Reference: `apps` (`data/`, `index.ts`, `pages/` , static card grid driven by config, no server folder).
+
 ### TypeScript
 
 | Rule | Wrong | Right |

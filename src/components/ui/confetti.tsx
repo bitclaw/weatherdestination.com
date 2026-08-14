@@ -41,7 +41,7 @@ const SHAPES: ParticleShape[] = ['circle', 'rect', 'rect', 'strip', 'strip'];
 const KEYFRAME_STEPS = 40;
 const SCALE_DURATION_FRACTION = 0.08;
 
-function computeKeyframes(params: {
+const computeKeyframes = (params: {
   angle: number;
   startVelocity: number;
   decay: number;
@@ -53,7 +53,7 @@ function computeKeyframes(params: {
   ticks: number;
   tiltRotations: number;
   rotation: number;
-}) {
+}) => {
   const {
     angle,
     startVelocity,
@@ -123,16 +123,26 @@ function computeKeyframes(params: {
   }
 
   return { transform, opacity };
-}
+};
+
+const WIDTH_FACTOR: Record<ParticleShape, number> = {
+  strip: 0.3,
+  rect: 0.7,
+  circle: 1
+};
+const BORDER_RADIUS: Record<ParticleShape, (size: number) => number | string> =
+  {
+    circle: () => '50%',
+    strip: size => size * 0.12,
+    rect: () => 2
+  };
 
 function ConfettiPiece({ particle }: { particle: Particle }) {
   const { keyframes, duration, size, color, shape } = particle;
 
-  const width =
-    shape === 'strip' ? size * 0.3 : shape === 'rect' ? size * 0.7 : size;
+  const width = size * WIDTH_FACTOR[shape];
   const height = shape === 'strip' ? size * 2 : size;
-  const borderRadius =
-    shape === 'circle' ? '50%' : shape === 'strip' ? size * 0.12 : 2;
+  const borderRadius = BORDER_RADIUS[shape](size);
 
   const callbackRef = (node: HTMLDivElement | null) => {
     if (!node) return;

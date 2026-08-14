@@ -131,7 +131,7 @@ export function AppsPage() {
                 <Button
                   className={
                     app.connected
-                      ? 'border border-blue-300 bg-blue-50 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950 dark:hover:bg-blue-900'
+                      ? 'border border-info/30 bg-info/10 hover:bg-info/20'
                       : ''
                   }
                   onClick={() => toggleConnected(app.name)}

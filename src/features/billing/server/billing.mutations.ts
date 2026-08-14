@@ -50,7 +50,12 @@ export const createCheckoutSessionFn = createServerFn({ method: 'POST' })
     });
 
     const customerId = existing?.stripeCustomerId ?? undefined;
-    const usedTrialBefore = await hasUsedTrialBefore(user.email);
+    let usedTrialBefore: boolean;
+    try {
+      usedTrialBefore = await hasUsedTrialBefore(user.email);
+    } catch {
+      return err(ERROR_CODES.INTERNAL, 'Failed to start checkout');
+    }
     const trialDays = resolveTrialDays(
       config.billing.trialDays,
       usedTrialBefore

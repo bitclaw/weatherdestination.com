@@ -44,14 +44,14 @@ export function LandingWithWithout() {
             </ul>
           </div>
 
-          <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-8">
-            <h3 className="mb-4 font-bold text-lg text-green-700 dark:text-green-400">
+          <div className="rounded-xl border border-success/30 bg-success/5 p-8">
+            <h3 className="mb-4 font-bold text-lg text-success">
               With {config.appName}
             </h3>
             <ul className="space-y-3">
               {withItems.map(item => (
                 <li
-                  className="flex items-start gap-2 text-sm text-green-700 dark:text-green-400"
+                  className="flex items-start gap-2 text-sm text-success"
                   key={item}
                 >
                   <Check className="mt-0.5 h-4 w-4 shrink-0 opacity-75" />

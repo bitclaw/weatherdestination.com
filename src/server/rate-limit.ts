@@ -82,15 +82,15 @@ export function createRateLimiter(config: Config) {
  * what headers were actually present. Confirmed by checking
  * node_modules/@tanstack/start-server-core/dist/esm/request-response.js.
  */
-function readHeader(
+const readHeader = (
   headers: Record<string, string | undefined> | Headers,
   name: string
-): string | undefined {
+): string | undefined => {
   if (typeof (headers as Headers).get === 'function') {
     return (headers as Headers).get(name) ?? undefined;
   }
   return (headers as Record<string, string | undefined>)[name];
-}
+};
 
 /** Extract client IP based on TRUST_PROXY setting.
  *  cloudflare: cf-connecting-ip

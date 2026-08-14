@@ -82,8 +82,8 @@ function ScheduledJobsPage() {
                   <span
                     className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                       schedule.enabled
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        ? 'bg-success/10 text-success dark:bg-success/20'
+                        : 'bg-warning/10 text-warning dark:bg-warning/20'
                     }`}
                   >
                     {schedule.enabled ? 'Enabled' : 'Paused'}

@@ -24,10 +24,10 @@ export const Route = createFileRoute('/_landing/changelog')({
 });
 
 const TAG_COLORS: Record<string, string> = {
-  core: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  breaking: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  beta: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  fix: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+  core: 'bg-info/10 text-info dark:bg-info/20',
+  breaking: 'bg-destructive/10 text-destructive dark:bg-destructive/20',
+  beta: 'bg-warning/10 text-warning dark:bg-warning/20',
+  fix: 'bg-success/10 text-success dark:bg-success/20'
 };
 
 function ChangelogPage() {

@@ -28,7 +28,7 @@ export function AppLayout({
       <AppSidebar flags={flags} isAdmin={isAdmin} plan={plan} user={user} />
       <SidebarInset className="@container/content has-data-[layout=fixed]:h-svh">
         {impersonatedBy && (
-          <div className="flex h-10 items-center justify-between border-b bg-amber-500/10 px-4 text-amber-700 dark:text-amber-400">
+          <div className="flex h-10 items-center justify-between border-b bg-warning/10 px-4 text-warning">
             <span className="text-xs font-medium">
               Impersonating {user.email}
             </span>

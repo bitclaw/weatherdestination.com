@@ -34,19 +34,19 @@ type ToastListener = (item: ToastItem) => void;
 
 const listeners = new Set<ToastListener>();
 
-function emitToast(item: ToastItem) {
+const emitToast = (item: ToastItem) => {
   for (const listener of listeners) {
     listener(item);
   }
-}
+};
 
 let toastCounter = 0;
 
-function createToast(
+const createToast = (
   title: string,
   variant: ToastVariant,
   opts?: ToastOptions
-): void {
+): void => {
   emitToast({
     id: String(++toastCounter),
     title,
@@ -55,7 +55,7 @@ function createToast(
     duration: opts?.duration ?? 4000,
     action: opts?.action
   });
-}
+};
 
 export const toast = {
   success: (title: string, opts?: ToastOptions) =>
@@ -78,9 +78,9 @@ const variantConfig: Record<
   ToastVariant,
   { icon: typeof CheckCircle2; iconClass: string }
 > = {
-  success: { icon: CheckCircle2, iconClass: 'text-green-500' },
-  error: { icon: XCircle, iconClass: 'text-red-500' },
-  default: { icon: Info, iconClass: 'text-blue-500' }
+  success: { icon: CheckCircle2, iconClass: 'text-success' },
+  error: { icon: XCircle, iconClass: 'text-destructive' },
+  default: { icon: Info, iconClass: 'text-info' }
 };
 
 function ToastItemComponent({

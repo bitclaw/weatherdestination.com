@@ -11,6 +11,10 @@ export function CreditsPage({ success }: { success: boolean }) {
   const queryClient = useQueryClient();
   const toast = useToast();
 
+  // Reacting to arrival with a `success` query param (a completed Stripe
+  // checkout redirect), not fetching data - the exception the coding
+  // skill's "Avoid useEffect" section carves out for one-shot side effects
+  // on arrival, same category as checkout.resume.tsx's mount effect.
   useEffect(() => {
     if (!success) return;
     queryClient.invalidateQueries({ queryKey: creditsQueryKey() });
@@ -55,7 +59,7 @@ export function CreditsPage({ success }: { success: boolean }) {
         )}
 
         {credits > 0 && credits <= 3 && (
-          <p className="mt-4 text-sm text-amber-500">
+          <p className="mt-4 text-sm text-warning">
             Running low. Top up soon to avoid interruptions.
           </p>
         )}

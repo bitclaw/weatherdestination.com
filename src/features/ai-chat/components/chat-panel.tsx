@@ -227,12 +227,16 @@ export const ChatPanel = ({
     // Auto-title on first message
     if (isFirstMessage && conversationTitle === 'New Chat') {
       const title = content.slice(0, 60);
-      await updateConversationTitleFn({
+      const titled = await updateConversationTitleFn({
         data: { conversationId, title }
       });
-      await queryClient.invalidateQueries({
-        queryKey: conversationsQueryKey()
-      });
+      if (!titled.ok) {
+        console.warn('Failed to auto-title conversation:', titled.message);
+      } else {
+        await queryClient.invalidateQueries({
+          queryKey: conversationsQueryKey()
+        });
+      }
     }
 
     if (localMode) {
