@@ -292,6 +292,8 @@ Reference: `src/routes/onboarding.tsx`.
 
 Reach for a design token (`bg-primary`, `text-muted-foreground`, etc.) before a raw Tailwind color , tokens carry dark-mode support and stay consistent with the rest of the app; raw colors silently break in dark mode and drift from the palette.
 
+**Exception**: brand colors (e.g. a provider's logo) and chart/data-visualization colors (`hsl(var(--chart-1))` through `--chart-5`) may use specific values , they're not status indicators, so the semantic tokens above don't apply to them.
+
 ### URL State (validateSearch)
 
 Any route that reads or writes search params must declare `validateSearch` in the route definition. Raw `useSearch()` without a `from` or `Route.useSearch()` returns `unknown`.
