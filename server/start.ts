@@ -19,7 +19,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { allPosts } from 'content-collections';
 import { createLogger } from '@/lib/logger';
-import { LANDING_PAGE_CACHE_CONTROL } from '@/lib/ssr-cache-headers';
+import {
+  AUTH_PAGE_CACHE_CONTROL,
+  LANDING_PAGE_CACHE_CONTROL
+} from '@/lib/ssr-cache-headers';
 import { applySecurityHeaders } from '@/server/csp';
 
 const log = createLogger({ module: 'startup' });
@@ -37,6 +40,15 @@ const PORT = Number(process.env.PORT ?? 3000);
 // other can't.
 const prerenderedIndexHtml = (urlPath: string): string =>
   path.join(distClient, urlPath, 'index.html');
+
+// Paths that must never be edge/browser-cached even though they're
+// prerendered - see AUTH_PAGE_CACHE_CONTROL's comment in ssr-cache-headers.ts.
+// Checked below instead of hardcoding 'no-store' here so this and _auth.tsx's
+// SSR path can't drift apart again (that drift is what caused warpkit.dev's
+// 2026-08-15 incident: _auth.tsx set a short-cache header, but this fast path
+// served a cookie-less /login request straight from disk with the long-lived
+// landing page header, bypassing _auth.tsx entirely).
+const AUTH_PRERENDERED_PATHS = new Set(['/login', '/signup']);
 
 const PRERENDERED: Record<string, string> = {
   '/': path.join(distClient, 'index.html'),
@@ -171,7 +183,9 @@ Bun.serve({
         if (!cookie.includes(`${SESSION_COOKIE_NAME}=`)) {
           const headers = new Headers({
             'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': LANDING_PAGE_CACHE_CONTROL
+            'Cache-Control': AUTH_PRERENDERED_PATHS.has(url.pathname)
+              ? AUTH_PAGE_CACHE_CONTROL
+              : LANDING_PAGE_CACHE_CONTROL
           });
           applySecurityHeaders(headers, true);
           return new Response(Bun.file(htmlPath), { headers });

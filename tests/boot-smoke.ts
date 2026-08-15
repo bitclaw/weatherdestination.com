@@ -245,6 +245,28 @@ await assertSecurityHeaders(
 
 console.info('✓ Security headers present on prerendered/static/SSR paths');
 
+// Regression check for the 2026-08-15 warpkit.dev incident (sibling product,
+// built from the same template): a cookie-less GET /login was served with a
+// long-lived cache header via server/start.ts's prerendered fast path, so a
+// browser kept booting a deleted JS bundle for up to 24h post-deploy. Must be
+// GET, not HEAD - the fast path is gated on request.method === 'GET'
+// (server/start.ts), and a HEAD falls through to the SSR handler instead,
+// which would pass even if this fast-path header were wrong.
+for (const authPath of ['/login', '/signup']) {
+  const res = await fetch(`http://localhost:${PORT}${authPath}`);
+  const cacheControl = res.headers.get('Cache-Control');
+  if (cacheControl !== 'no-store') {
+    console.error(
+      `❌ GET ${authPath} Cache-Control is '${cacheControl}', expected 'no-store' - the prerendered fast path in server/start.ts must never edge-cache the auth pages.`
+    );
+    dumpOutput();
+    proc.kill('SIGKILL');
+    process.exit(1);
+  }
+}
+
+console.info('✓ /login and /signup are never edge-cached');
+
 proc.kill('SIGTERM');
 
 let exited = false;

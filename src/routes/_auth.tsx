@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { PATHS } from '@/lib/constants';
 import { hasSessionCookie } from '@/lib/has-session-cookie';
-import { setPublicPageCacheHeader } from '@/lib/ssr-cache-headers';
+import { setAuthPageCacheHeader } from '@/lib/ssr-cache-headers';
 import { AuthLayout } from '@/pages';
 import { bootstrapQueryOptions } from '@/server/functions';
 
@@ -15,7 +15,7 @@ export const Route = createFileRoute('/_auth')({
     // still falls through to this beforeLoad and gets the real server-side
     // redirect below - no UX regression for an already-logged-in visitor.
     if (!(await hasSessionCookie())) {
-      await setPublicPageCacheHeader();
+      await setAuthPageCacheHeader();
       return;
     }
     const result = await context.queryClient.ensureQueryData(
