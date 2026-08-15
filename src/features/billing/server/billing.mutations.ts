@@ -31,7 +31,12 @@ const userSyncLimiter = createRateLimiter({ windowMs: 60_000, max: 20 });
 export const createCheckoutSessionFn = createServerFn({ method: 'POST' })
   .validator(
     z.object({
-      priceId: z.string().min(1).max(100),
+      // No .min(1): an empty priceId means this deployment's env is
+      // missing a VITE_STRIPE_*_PRICE_ID var (config.ts falls back to
+      // ''), not a malformed request - reject it below with a message
+      // that says so, instead of letting zod's own validator throw a raw
+      // issues array the client has no way to render meaningfully.
+      priceId: z.string().max(100),
       interval: z.enum(['monthly', 'yearly'])
     })
   )
@@ -42,6 +47,13 @@ export const createCheckoutSessionFn = createServerFn({ method: 'POST' })
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
     if (userCheckoutLimiter.check(user.id))
       return err(ERROR_CODES.RATE_LIMITED, 'Too many requests');
+
+    if (!data.priceId) {
+      return err(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Billing is not set up for this plan yet. Contact support.'
+      );
+    }
 
     const validPriceIds = config.stripe.plans
       .flatMap(p => [p.recurring?.priceId, p.recurring?.yearlyPriceId])
@@ -98,7 +110,8 @@ export const createCheckoutSessionFn = createServerFn({ method: 'POST' })
   });
 
 export const createOneTimeCheckoutFn = createServerFn({ method: 'POST' })
-  .validator(z.object({ priceId: z.string().min(1).max(100) }))
+  // No .min(1): see createCheckoutSessionFn's validator comment above.
+  .validator(z.object({ priceId: z.string().max(100) }))
   .handler(async ({ data }) => {
     if (checkoutLimiter.check())
       return err(ERROR_CODES.RATE_LIMITED, 'Too many requests');
@@ -106,6 +119,13 @@ export const createOneTimeCheckoutFn = createServerFn({ method: 'POST' })
     if (!user) return err(ERROR_CODES.UNAUTHORIZED, 'Not authenticated');
     if (userCheckoutLimiter.check(user.id))
       return err(ERROR_CODES.RATE_LIMITED, 'Too many requests');
+
+    if (!data.priceId) {
+      return err(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Billing is not set up for this plan yet. Contact support.'
+      );
+    }
 
     const validPriceIds = config.stripe.plans
       .map(p => p.oneTime?.priceId)

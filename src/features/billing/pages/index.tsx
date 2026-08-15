@@ -334,11 +334,17 @@ function OneTimeBillingSection({
                 </div>
                 <button
                   className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
-                  disabled={loading === p.oneTime!.priceId}
+                  disabled={
+                    !p.oneTime!.priceId || loading === p.oneTime!.priceId
+                  }
                   onClick={() => onBuyOnce(p.oneTime!.priceId)}
                   type="button"
                 >
-                  {loading === p.oneTime!.priceId ? 'Loading...' : 'Buy once'}
+                  {!p.oneTime!.priceId
+                    ? 'Billing not set up'
+                    : loading === p.oneTime!.priceId
+                      ? 'Loading...'
+                      : 'Buy once'}
                 </button>
               </div>
               <ul className="space-y-1">
@@ -438,13 +444,18 @@ function SubscriptionBillingSection({
                     </div>
                     <button
                       className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
-                      disabled={loading === p.recurring!.priceId}
+                      disabled={
+                        !p.recurring!.priceId ||
+                        loading === p.recurring!.priceId
+                      }
                       onClick={() => onUpgrade(p.recurring!.priceId)}
                       type="button"
                     >
-                      {loading === p.recurring!.priceId
-                        ? 'Loading...'
-                        : 'Upgrade'}
+                      {!p.recurring!.priceId
+                        ? 'Billing not set up'
+                        : loading === p.recurring!.priceId
+                          ? 'Loading...'
+                          : 'Upgrade'}
                     </button>
                   </div>
                   <ul className="space-y-1">
