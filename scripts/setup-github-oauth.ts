@@ -12,15 +12,9 @@
 //   bun scripts/setup-github-oauth.ts --env=prod     # -> .env.production, https://<domain> callback
 
 import { spawn } from 'node:child_process';
-import { existsSync, readFileSync, readSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { config } from '@/config';
-
-function prompt(question: string): string {
-  process.stdout.write(question);
-  const buf = Buffer.alloc(4096);
-  const n = readSync(0, buf, 0, 4096, null);
-  return buf.subarray(0, n).toString().trim();
-}
+import { prompt } from './lib/prompt';
 
 function upsertEnvVar(env: string, key: string, value: string): string {
   const uncommented = new RegExp(`^${key}=.*$`, 'm');

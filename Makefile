@@ -6,7 +6,7 @@
         mail.up mail.down mail.logs loadtest.seed check-error-codes \
         check-barrel-pages check-prefetch-bare check-webhook-idempotency \
         check-client-bundle-leaks check-ratelimit-keying check-weak-types stripe.setup \
-        stripe.webhook.setup github.oauth.setup
+        stripe.webhook.setup github.oauth.setup changelog.draft
 
 help:
 	@grep -E '^[a-zA-Z0-9_.]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -35,6 +35,9 @@ stripe.webhook.setup: ## Register (or repair) the production Stripe webhook endp
 
 github.oauth.setup: ## Guided GitHub OAuth App creation, writes creds into env (ENV=local|prod, default local)
 	@bun scripts/setup-github-oauth.ts --env=$(or $(ENV),local)
+
+changelog.draft: ## Generate a draft changelog entry from commits since the last one (review before committing; SINCE=<date-or-sha> for a manual slice)
+	@bun scripts/generate-changelog.ts $(if $(SINCE),--since=$(SINCE),)
 
 scaffold: ## Scaffold warpkit into TARGET= (FORCE=1, DRY_RUN=1, BOOTSTRAP=0, OVERWRITE_PROTECTED=1)
 	@[ -n "$(TARGET)" ] || (echo "Error: TARGET required. Usage: make scaffold TARGET=/path/to/repo" && exit 1)

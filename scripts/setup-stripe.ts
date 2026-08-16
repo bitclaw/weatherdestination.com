@@ -9,16 +9,10 @@
 // products and matches client-side on metadata.warpkit_plan. Fine for a
 // template project's own Stripe account; not meant for accounts with
 // hundreds of pre-existing products.
-import { existsSync, readFileSync, readSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import Stripe from 'stripe';
 import { config } from '@/config';
-
-function prompt(question: string): string {
-  process.stdout.write(question);
-  const buf = Buffer.alloc(4096);
-  const n = readSync(0, buf, 0, 4096, null);
-  return buf.subarray(0, n).toString().trim();
-}
+import { prompt } from './lib/prompt';
 
 function upsertEnvVar(env: string, key: string, value: string): string {
   const uncommented = new RegExp(`^${key}=.*$`, 'm');
