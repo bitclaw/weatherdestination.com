@@ -6,7 +6,7 @@
         mail.up mail.down mail.logs loadtest.seed check-error-codes \
         check-barrel-pages check-prefetch-bare check-webhook-idempotency \
         check-client-bundle-leaks check-ratelimit-keying check-weak-types stripe.setup \
-        github.oauth.setup
+        stripe.webhook.setup github.oauth.setup
 
 help:
 	@grep -E '^[a-zA-Z0-9_.]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -22,13 +22,16 @@ stripe.setup: ## Create Stripe products/prices from config.ts and wire price IDs
 	@bun scripts/setup-stripe.ts $(ENV_FILE)
 	@echo ""
 	@echo "  Done. Next:"
-	@echo "  1. Edit config.ts  -- set appName, domainName, Stripe plans"
-	@echo "  2. Fill in .env    -- Stripe keys, Resend key, ADMIN_EMAILS"
-	@echo "  3. Set Stripe webhook URL to https://yourdomain/api/v1/stripe-webhook"
+	@echo "  1. Edit config.ts       -- set appName, domainName, Stripe plans"
+	@echo "  2. Fill in .env         -- Stripe keys, Resend key, ADMIN_EMAILS"
+	@echo "  3. make stripe.webhook.setup ENV_FILE=.env.production  -- once deployed, registers the webhook"
 	@echo "  4. make dev"
 	@echo ""
 	@echo "  Optional: see README for resetting git history."
 	@echo ""
+
+stripe.webhook.setup: ## Register (or repair) the production Stripe webhook endpoint and write its signing secret into .env.production (override: make stripe.webhook.setup ENV_FILE=.env.production)
+	@bun scripts/setup-stripe-webhook.ts $(ENV_FILE)
 
 github.oauth.setup: ## Guided GitHub OAuth App creation, writes creds into env (ENV=local|prod, default local)
 	@bun scripts/setup-github-oauth.ts --env=$(or $(ENV),local)
