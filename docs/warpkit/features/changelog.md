@@ -99,6 +99,20 @@ If entries have lapsed for a while (many commits, no `SINCE` slicing yet):
 3. Edit each into real release-note prose - the draft is raw commit
    subjects, not publishable copy - and set real dates if reconstructable
    from `git log`.
+
+   **On a product site built from this template (like warpkit.dev), filter
+   for template-relevant changes only.** The draft's commit list mixes two
+   different things: changes that actually shipped in `bitclaw/warpkit`
+   (what a buyer's clone gets) and changes local to *this* deployment only
+   (marketing copy, this site's own config/business choices, anything never
+   ported back to the template). Only the first kind belongs in a public
+   changelog whose purpose is "is this template maintained, what do I get" -
+   a bullet describing this site's own config as if it were a template
+   feature is actively misleading, not just off-topic. If you didn't port a
+   commit back to `bitclaw/warpkit`, it doesn't belong in this file. This
+   also means a raw commit list is a bad signal for the suggested version
+   bump/`breaking` tag once irrelevant commits are filtered out - re-derive
+   both from what's left, don't take the script's suggestion as-is here.
 4. `make ci` validates the new entries against the `releases` schema and
    rebuilds the prerendered page. Commit.
 
