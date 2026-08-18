@@ -41,7 +41,7 @@
     "@aws-sdk/s3-presigned-post": "3.1063.0",
     "@aws-sdk/s3-request-presigner": "3.1063.0",
     "@bitclaw/disposable-email": "1.2.1",
-    "@bitclaw/jobs": "2.1.4",
+    "@bitclaw/jobs": "2.1.5",
     "@bitclaw/result": "1.2.1",
     "@bitclaw/sqlite": "1.5.2",
     "@radix-ui/react-accordion": "1.2.12",
