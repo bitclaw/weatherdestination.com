@@ -10,7 +10,7 @@
         "@aws-sdk/s3-request-presigner": "3.1063.0",
         "@better-auth/utils": "0.4.1",
         "@bitclaw/disposable-email": "1.2.1",
-        "@bitclaw/jobs": "2.1.7",
+        "@bitclaw/jobs": "2.1.8",
         "@bitclaw/result": "1.2.1",
         "@bitclaw/sqlite": "1.5.2",
         "@radix-ui/react-accordion": "1.2.12",
@@ -264,7 +264,7 @@
 
     "@bitclaw/disposable-email": ["@bitclaw/disposable-email@1.2.1", "", {}, "sha512-3TCc99eRdDRH5IzRpeOQ0ip34cZiHrH+olr6Mrv8d/HGzI8dZkMeUD6K0Auu3MhSSMB1kXxKthDIfq13zqlJMA=="],
 
-    "@bitclaw/jobs": ["@bitclaw/jobs@2.1.7", "", { "dependencies": { "@bitclaw/sqlite": "1.5.2" } }, "sha512-feaLDvaHmM1ZnSsY65jTMd2rj/6BJNay339Qf43rhmdK1YhSuu3HSfMK4YoAAQpdca62jQ0YAWNTBa8Tsx/Xzg=="],
+    "@bitclaw/jobs": ["@bitclaw/jobs@2.1.8", "", { "dependencies": { "@bitclaw/sqlite": "1.5.2" } }, "sha512-BRGfkFbmnIYRBi4vkwnJFwdPjJ7FCnFnbiupQYjjIeyXWENNd/jHZVyBa6wlacPKbq9o3lQz85pIuVY+tRD7bQ=="],
 
     "@bitclaw/loadtest": ["@bitclaw/loadtest@1.3.0", "", { "dependencies": { "@bitclaw/sqlite": "1.4.0", "commander": "^12.1.0" }, "bin": { "loadtest": "dist/cli.js" } }, "sha512-g0TBtPttSbmcmC5ZgJpSNc/yyvTnHSbx90QUWW7/xPyD/QmN8D+gzqZyFXv9Jl8D6S+CyYk3s+zfsH3xAqRD4A=="],
 
