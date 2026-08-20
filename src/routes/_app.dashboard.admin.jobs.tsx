@@ -43,6 +43,9 @@ export const Route = createFileRoute('/_app/dashboard/admin/jobs')({
       queryClient.prefetchQuery(jobTypesQueryOptions),
       queryClient.prefetchQuery(
         activeJobsQueryOptions({ limit: DEFAULT_LIMIT, offset: 0 })
+      ),
+      queryClient.prefetchQuery(
+        failedJobsQueryOptions({ limit: DEFAULT_LIMIT, offset: 0 })
       )
     ]);
   },
