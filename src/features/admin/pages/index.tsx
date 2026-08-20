@@ -145,6 +145,10 @@ export function AdminPage() {
         setError(res.message);
         return;
       }
+      if (!res.data.deleted) {
+        setError(res.data.message);
+        return;
+      }
       await refresh();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed');

@@ -96,15 +96,19 @@ export const adminDeleteUserFn = createServerFn({ method: 'POST' })
       });
 
       const completed = await runDeletionJob(jobId);
-      if (!completed)
-        return ok({
-          deleted: false,
-          jobId,
-          message:
-            'Deletion started but not yet complete. Reconciler will finish on next startup.'
-        });
-
-      return ok({ deleted: true });
+      const result: {
+        deleted: boolean;
+        jobId: string | null;
+        message: string | null;
+      } = completed
+        ? { deleted: true, jobId: null, message: null }
+        : {
+            deleted: false,
+            jobId,
+            message:
+              'Deletion started but not yet complete. Reconciler will finish on next startup.'
+          };
+      return ok(result);
     } catch (caught: unknown) {
       return err(
         ERROR_CODES.INTERNAL,

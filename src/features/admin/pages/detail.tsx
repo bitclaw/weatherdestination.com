@@ -176,6 +176,10 @@ export function AdminUserDetailPage({ userId }: Props) {
         setError(res.message);
         return;
       }
+      if (!res.data.deleted) {
+        setError(res.data.message);
+        return;
+      }
       window.location.href = '/dashboard/admin';
     });
   };
