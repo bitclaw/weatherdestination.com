@@ -2,9 +2,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 
-type LastUsedMethod = 'email' | 'google' | 'github';
+type LastUsedMethod = 'email' | 'google' | 'github' | 'gitlab';
 const LAST_METHOD_KEY = 'auth:lastMethod';
 
+import { IconGitlab } from '@/assets/brand-icons';
 import { ErrorBanner } from '@/components/ui/error-banner';
 import { config } from '@/config';
 import { useCaptcha } from '@/features/captcha';
@@ -17,9 +18,12 @@ import { sendLoginOtp } from '@/server/functions';
 const appName = config.appName;
 const turnstileEnabled = config.auth.turnstile.enabled;
 const verificationMethod = config.auth.verificationMethod;
-const { google: googleEnabled, github: githubEnabled } =
-  config.auth.socialProviders;
-const hasSocialProviders = googleEnabled || githubEnabled;
+const {
+  google: googleEnabled,
+  github: githubEnabled,
+  gitlab: gitlabEnabled
+} = config.auth.socialProviders;
+const hasSocialProviders = googleEnabled || githubEnabled || gitlabEnabled;
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -34,7 +38,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<
-    'google' | 'github' | null
+    'google' | 'github' | 'gitlab' | null
   >(null);
   const [lastUsed, setLastUsed] = useState<LastUsedMethod | null>(null);
   const [ctaVisible, setCtaVisible] = useState(false);
@@ -89,7 +93,9 @@ export function LoginPage() {
     ? { 'x-captcha-response': captchaToken }
     : undefined;
 
-  const handleSocialLogin = async (provider: 'google' | 'github') => {
+  const handleSocialLogin = async (
+    provider: 'google' | 'github' | 'gitlab'
+  ) => {
     setError(null);
     setSocialLoading(provider);
     markLastUsed(provider);
@@ -391,6 +397,28 @@ export function LoginPage() {
                   {socialLoading === 'github'
                     ? 'Redirecting...'
                     : 'Continue with GitHub'}
+                </button>
+              </div>
+            )}
+
+            {gitlabEnabled && (
+              <div className="relative">
+                {lastUsed === 'gitlab' && (
+                  <span className="animate-in fade-in absolute -top-2 -right-2 z-10 inline-flex items-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-medium tracking-wide text-primary-foreground">
+                    Last used
+                  </span>
+                )}
+                <button
+                  aria-label="Continue with GitLab"
+                  className="border-input bg-card hover:bg-muted text-foreground flex h-12 w-full items-center justify-center gap-3 rounded-lg border px-4 text-sm font-medium transition-colors disabled:opacity-50"
+                  disabled={isLoading || socialLoading !== null}
+                  onClick={() => handleSocialLogin('gitlab')}
+                  type="button"
+                >
+                  <IconGitlab className="h-5 w-5 shrink-0" />
+                  {socialLoading === 'gitlab'
+                    ? 'Redirecting...'
+                    : 'Continue with GitLab'}
                 </button>
               </div>
             )}

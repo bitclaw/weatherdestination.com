@@ -92,6 +92,7 @@ export type AppConfig = {
     socialProviders: {
       google: boolean;
       github: boolean;
+      gitlab: boolean;
     };
     turnstile: {
       enabled: boolean;
@@ -260,7 +261,8 @@ export const config = {
     mxCheck: _env.VITE_MX_CHECK !== 'false',
     socialProviders: {
       google: Boolean(_env.VITE_GOOGLE_CLIENT_ID),
-      github: Boolean(_env.VITE_GITHUB_CLIENT_ID)
+      github: Boolean(_env.VITE_GITHUB_CLIENT_ID),
+      gitlab: Boolean(_env.VITE_GITLAB_CLIENT_ID)
     },
     turnstile: {
       enabled: Boolean(_env.VITE_TURNSTILE_SITE_KEY),
