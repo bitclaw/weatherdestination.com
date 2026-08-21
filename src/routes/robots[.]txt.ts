@@ -1,19 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { config } from '@/config';
+import { buildRobotsTxt } from '@/lib/seo-static';
 
 export const Route = createFileRoute('/robots.txt')({
   server: {
     handlers: {
       GET: () =>
-        new Response(
-          `User-agent: *\nAllow: /\n\nSitemap: https://${config.domainName}/sitemap.xml\n`,
-          {
-            headers: {
-              'Content-Type': 'text/plain',
-              'Cache-Control': 'public, max-age=86400'
-            }
+        new Response(buildRobotsTxt(config.domainName), {
+          headers: {
+            'Content-Type': 'text/plain',
+            'Cache-Control': 'public, max-age=86400'
           }
-        )
+        })
     }
   }
 });

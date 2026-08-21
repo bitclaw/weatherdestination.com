@@ -83,7 +83,9 @@ export default defineConfig({
           page.path === '/login' ||
           page.path === '/signup' ||
           page.path === '/blog' ||
-          page.path.startsWith('/blog/'),
+          page.path.startsWith('/blog/') ||
+          page.path === '/robots.txt' ||
+          page.path === '/sitemap.xml',
         // Blog post pages are dynamic (/blog/$slug) so autoStaticPathsDiscovery
         // skips them; crawlLinks finds them by parsing <a href> out of the
         // rendered /blog index instead, no manual slug list to keep in sync.
@@ -95,6 +97,15 @@ export default defineConfig({
         // source of truth is LANDING_PAGE_CACHE_CONTROL in
         // src/lib/ssr-cache-headers.ts.
       },
+      // robots.txt/sitemap.xml are server routes (server.handlers.GET, no
+      // `component`), so autoStaticPathsDiscovery never finds them - it
+      // only walks routes with a component prop (see
+      // prerender-routes-plugin.ts in @tanstack/start-plugin-core). filter
+      // above still gates these entries too, so both places need the path.
+      pages: [
+        { path: '/robots.txt', prerender: { enabled: true } },
+        { path: '/sitemap.xml', prerender: { enabled: true } }
+      ],
       router: {
         routeFileIgnorePattern: '\\.(test|spec)\\.(ts|tsx)$'
       },

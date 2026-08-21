@@ -267,6 +267,47 @@ for (const authPath of ['/login', '/signup']) {
 
 console.info('✓ /login and /signup are never edge-cached');
 
+// Regression check for the Ahrefs-timeout incident: robots.txt/sitemap.xml
+// used to be pure SSR routes hit on every request; they're now prerendered
+// (vite.config.ts's `pages` array) and served off disk via the static-asset
+// branch in server/start.ts, with a Cache-Control override preserving their
+// original TTLs. Assert both, since a silent fall-through to SSR (wrong
+// `pages`/`filter` config) wouldn't fail the build, just lose the fix.
+const assertSeoStaticFile = async (
+  urlPath: string,
+  contentType: string,
+  cacheControl: string
+): Promise<void> => {
+  const res = await fetch(`http://localhost:${PORT}${urlPath}`);
+  const failures: string[] = [];
+  if (res.status !== 200) failures.push(`status ${res.status}, expected 200`);
+  const actualType = res.headers.get('Content-Type');
+  if (actualType !== contentType) {
+    failures.push(`Content-Type '${actualType}', expected '${contentType}'`);
+  }
+  const actualCache = res.headers.get('Cache-Control');
+  if (actualCache !== cacheControl) {
+    failures.push(`Cache-Control '${actualCache}', expected '${cacheControl}'`);
+  }
+  if (failures.length > 0) {
+    console.error(`❌ ${urlPath}: ${failures.join('; ')}`);
+    dumpOutput();
+    proc.kill('SIGKILL');
+    process.exit(1);
+  }
+};
+
+await assertSeoStaticFile('/robots.txt', 'text/plain', 'public, max-age=86400');
+await assertSeoStaticFile(
+  '/sitemap.xml',
+  'application/xml',
+  'public, max-age=3600'
+);
+
+console.info(
+  '✓ /robots.txt and /sitemap.xml served prerendered, correct headers'
+);
+
 proc.kill('SIGTERM');
 
 let exited = false;

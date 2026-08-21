@@ -96,6 +96,17 @@ const MIME: Record<string, string> = {
   '.xml': 'application/xml'
 };
 
+// robots.txt/sitemap.xml are prerendered server routes (see
+// vite.config.ts's `pages` array), so they land in the generic static-asset
+// branch below like any other non-hashed file - which defaults to
+// max-age=0, must-revalidate. Override to preserve the longer TTLs the
+// routes themselves used to set at request time (src/routes/robots[.]txt.ts,
+// sitemap[.]xml.ts).
+const SEO_CACHE_CONTROL: Record<string, string> = {
+  '/robots.txt': 'public, max-age=86400',
+  '/sitemap.xml': 'public, max-age=3600'
+};
+
 const { default: ssr } = await import('../dist/server/server.js');
 
 const sentryDsn = process.env.VITE_SENTRY_DSN;
@@ -206,9 +217,11 @@ Bun.serve({
           const isHashed = url.pathname.startsWith('/assets/');
           const headers = new Headers({
             'Content-Type': mime,
-            'Cache-Control': isHashed
-              ? 'public, max-age=31536000, immutable'
-              : 'public, max-age=0, must-revalidate'
+            'Cache-Control':
+              SEO_CACHE_CONTROL[url.pathname] ??
+              (isHashed
+                ? 'public, max-age=31536000, immutable'
+                : 'public, max-age=0, must-revalidate')
           });
           applySecurityHeaders(headers, true);
           return new Response(Bun.file(resolved), { headers });
