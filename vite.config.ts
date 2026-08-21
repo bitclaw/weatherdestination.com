@@ -6,6 +6,10 @@ import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { createLogger, defineConfig } from 'vite';
+import {
+  NON_HTML_PRERENDERED_PATHS,
+  STATIC_HTML_PATHS
+} from './src/lib/prerendered-paths';
 
 // Baked into both the client and SSR bundles at build time (a single Vite
 // build produces one matched pair, so the constant is identical everywhere
@@ -73,19 +77,11 @@ export default defineConfig({
         // being added) would get its personalized-for-nobody-in-particular
         // HTML baked in at build time and served to every visitor.
         filter: page =>
-          page.path === '/' ||
-          page.path === '/pricing' ||
-          page.path === '/features' ||
-          page.path === '/changelog' ||
-          page.path === '/contact' ||
-          page.path === '/privacy' ||
-          page.path === '/tos' ||
-          page.path === '/login' ||
-          page.path === '/signup' ||
-          page.path === '/blog' ||
-          page.path.startsWith('/blog/') ||
-          page.path === '/robots.txt' ||
-          page.path === '/sitemap.xml',
+          (STATIC_HTML_PATHS as readonly string[]).includes(page.path) ||
+          (NON_HTML_PRERENDERED_PATHS as readonly string[]).includes(
+            page.path
+          ) ||
+          page.path.startsWith('/blog/'),
         // Blog post pages are dynamic (/blog/$slug) so autoStaticPathsDiscovery
         // skips them; crawlLinks finds them by parsing <a href> out of the
         // rendered /blog index instead, no manual slug list to keep in sync.
@@ -102,10 +98,10 @@ export default defineConfig({
       // only walks routes with a component prop (see
       // prerender-routes-plugin.ts in @tanstack/start-plugin-core). filter
       // above still gates these entries too, so both places need the path.
-      pages: [
-        { path: '/robots.txt', prerender: { enabled: true } },
-        { path: '/sitemap.xml', prerender: { enabled: true } }
-      ],
+      pages: NON_HTML_PRERENDERED_PATHS.map(path => ({
+        path,
+        prerender: { enabled: true }
+      })),
       router: {
         routeFileIgnorePattern: '\\.(test|spec)\\.(ts|tsx)$'
       },

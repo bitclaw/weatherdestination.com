@@ -8,21 +8,43 @@ database hit, faster than even `ssr: 'data-only'`. Currently covers `/`,
 
 ## How it works
 
-Two pieces have to agree, and both live outside `src/`:
+Two pieces have to agree, and both live outside `src/` - except the one
+thing they actually share, which now lives in exactly one place:
 
-**1. `vite.config.ts`** , the `tanstackStart({ prerender: {...} })` option
-tells the build which routes to render to HTML:
+**0. `src/lib/prerendered-paths.ts`** , the flat list of exact-match static
+paths, imported by both pieces below:
+
+```ts
+export const STATIC_HTML_PATHS = [
+  '/', '/pricing', '/features', '/changelog', '/contact',
+  '/privacy', '/tos', '/login', '/signup', '/blog'
+] as const;
+
+export const NON_HTML_PRERENDERED_PATHS = ['/robots.txt', '/sitemap.xml'] as const;
+```
+
+This exists because the flat path list used to be hand-duplicated between
+`vite.config.ts`'s `filter` and `server/start.ts`'s `PRERENDERED` map - a
+path in one but not the other failed silently (falls through to full SSR
+every request, not a build error), which is exactly what broke
+`robots.txt`/`sitemap.xml` before they were added to both. `/blog/*` is
+deliberately excluded from this shared list: both files already derive it
+independently from `content-collections` data (`crawlLinks` vs `allPosts`),
+never hand-listed, so it was never the actual duplication.
+
+**1. `vite.config.ts`** , the `tanstackStart({ prerender: {...}, pages: [...] })`
+options tell the build which routes to render to HTML:
 
 ```ts
 prerender: {
   enabled: true,
   filter: page =>
-    page.path === '/' ||
-    page.path === '/pricing' ||
-    // ...one entry per static page
+    (STATIC_HTML_PATHS as readonly string[]).includes(page.path) ||
+    (NON_HTML_PRERENDERED_PATHS as readonly string[]).includes(page.path) ||
     page.path.startsWith('/blog/'),
   crawlLinks: true // discovers /blog/$slug posts by parsing <a href> out of the rendered /blog index
-}
+},
+pages: NON_HTML_PRERENDERED_PATHS.map(path => ({ path, prerender: { enabled: true } }))
 ```
 
 `filter` is an **allowlist**, not a denylist. TanStack's router-generator
@@ -42,9 +64,12 @@ handler:
 
 ```ts
 const PRERENDERED: Record<string, string> = {
-  '/': path.join(distClient, 'index.html'),
-  '/pricing': prerenderedIndexHtml('pricing'),
-  // ...
+  ...Object.fromEntries(
+    STATIC_HTML_PATHS.map(urlPath => [
+      urlPath,
+      urlPath === '/' ? path.join(distClient, 'index.html') : prerenderedIndexHtml(urlPath.slice(1))
+    ])
+  ),
   ...Object.fromEntries(
     allPosts.map(post => [`/blog/${post.slug}`, prerenderedIndexHtml(`blog/${post.slug}`)])
   )
@@ -79,13 +104,12 @@ separate mechanism to reason about.
 1. Confirm the route has no auth-gated or per-user content , grep its route
    file for `beforeLoad`/`loader`/`requireUser`. If it reads anything from a
    session or the database on a per-visitor basis, it does not belong here.
-2. Add the path to `filter` in `vite.config.ts`.
-3. Add the matching entry to `PRERENDERED` in `server/start.ts` (use
-   `prerenderedIndexHtml('your-path')` , the helper already assumes the
-   `<path>/index.html` output layout every other entry uses).
-4. `make build` and check the log for `[prerender] - /your-path`, then
+2. Add the path to `STATIC_HTML_PATHS` in `src/lib/prerendered-paths.ts` -
+   one edit, read by both `vite.config.ts`'s filter and `server/start.ts`'s
+   `PRERENDERED` map, so there's nothing to keep in sync by hand anymore.
+3. `make build` and check the log for `[prerender] - /your-path`, then
    confirm `dist/client/your-path/index.html` exists.
-5. Boot the built server (`make start`) and curl the route , a real page
+4. Boot the built server (`make start`) and curl the route , a real page
    load, not a build-time crawl.
 
 ## Non-HTML server routes: robots.txt and sitemap.xml
@@ -102,12 +126,11 @@ the `PRERENDERED`/`prerenderedIndexHtml` mechanism described above:
   be added to an explicit `pages` array in `vite.config.ts`'s
   `tanstackStart({...})` options (a sibling of `prerender`, not nested
   inside it), in addition to `filter` (which still gates explicitly-listed
-  pages too):
+  pages too). Both are derived from `NON_HTML_PRERENDERED_PATHS`
+  (`src/lib/prerendered-paths.ts`), so a new non-HTML route only needs
+  adding to that one array:
   ```ts
-  pages: [
-    { path: '/robots.txt', prerender: { enabled: true } },
-    { path: '/sitemap.xml', prerender: { enabled: true } }
-  ]
+  pages: NON_HTML_PRERENDERED_PATHS.map(path => ({ path, prerender: { enabled: true } }))
   ```
 - Because their responses aren't `text/html`, the prerender crawler writes
   them to the literal output path (`dist/client/robots.txt`,
