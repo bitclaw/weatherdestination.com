@@ -6,6 +6,10 @@ database hit, faster than even `ssr: 'data-only'`. Currently covers `/`,
 `/pricing`, `/features`, `/changelog`, `/privacy`, `/tos`, `/login`,
 `/signup`, `/blog`, and every `/blog/:slug` post.
 
+This doc covers what gets prerendered and when. For how the built server actually
+serves it (route-table structure, ETag/304, gzip, in-memory preloading), see
+[static-asset-serving.md](static-asset-serving.md).
+
 ## How it works
 
 Two pieces have to agree, and both live outside `src/` - except the one

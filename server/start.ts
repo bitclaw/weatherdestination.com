@@ -26,6 +26,12 @@ import {
   LANDING_PAGE_CACHE_CONTROL
 } from '@/lib/ssr-cache-headers';
 import { applySecurityHeaders } from '@/server/csp';
+import {
+  buildAssetResponse,
+  buildStaticAssetRoutes,
+  loadAssetForPreload,
+  readAssetPreloadConfig
+} from './static-assets';
 
 const log = createLogger({ module: 'startup' });
 
@@ -171,6 +177,123 @@ const shutdown = async (): Promise<void> => {
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
 
+// Re-applies security headers to any Response and clones it through - same
+// pattern for both response categories below (fast-path static/prerendered
+// content, and real SSR), just with a different isProduction value per
+// category (see the two functions below for why they differ).
+const rewriteWithSecurityHeaders = (
+  response: Response,
+  isProduction: boolean
+): Response => {
+  const headers = new Headers(response.headers);
+  applySecurityHeaders(headers, isProduction);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+};
+
+// Fast-path responses (prerendered HTML with no session cookie, static
+// assets) only exist once a real build has run, so there's nothing to relax
+// for local dev - always isProduction=true. Wraps a plain handler so 200s,
+// 304s, and anything else the handler returns all get headers the same way.
+const withFastPathSecurityHeaders =
+  (handler: (req: Request) => Response | Promise<Response>) =>
+  async (req: Request): Promise<Response> =>
+    rewriteWithSecurityHeaders(await handler(req), true);
+
+// Not just a passthrough: a thrown redirect() and the router's not-found
+// handling both produce a Response that never reaches securityMiddleware's
+// setResponseHeader calls in src/start.ts (that middleware only decorates
+// the response TanStack Start itself builds for a resolved route, not a
+// Response thrown mid-loader) - confirmed via manual curl against a
+// redirecting route and a nonexistent path, both missing HSTS/CSP/
+// X-Frame-Options while a normal 200 SSR page carried them correctly.
+// Re-applying here guarantees every response leaving this process carries
+// the headers, regardless of which internal path produced it. Used both by
+// the wildcard SSR fallback below and by a prerendered route's handler when
+// a session cookie is present (same delegation, same header policy either
+// way - unlike the fast paths, this one does vary with NODE_ENV so relaxed
+// CSP/no-HSTS still work for `bun run dev`-adjacent local testing).
+const deliverSsrResponse = async (request: Request): Promise<Response> =>
+  rewriteWithSecurityHeaders(
+    await ssr.fetch(request),
+    process.env.NODE_ENV === 'production'
+  );
+
+const assetPreloadConfig = readAssetPreloadConfig();
+
+// One route per prerendered HTML path - skip anything not actually built
+// (fs.existsSync gate matches the old code's behavior: a missing file means
+// this path gets no fast path at all, not even the cookie check, straight
+// to SSR for every request). GET-scoped so a POST to a prerendered path
+// still reaches SSR the same as before, not the static file.
+const buildPrerenderedRoutes = async (): Promise<
+  Record<string, { GET: (req: Request) => Promise<Response> }>
+> => {
+  const entries = await Promise.all(
+    Object.entries(PRERENDERED)
+      .filter(([, filepath]) => fs.existsSync(filepath))
+      .map(async ([urlPath, filepath]) => {
+        const asset = await loadAssetForPreload(
+          filepath,
+          'text/html; charset=utf-8',
+          assetPreloadConfig
+        );
+        const cacheControl = AUTH_PRERENDERED_PATHS.has(urlPath)
+          ? AUTH_PAGE_CACHE_CONTROL
+          : LANDING_PAGE_CACHE_CONTROL;
+
+        const handler = async (request: Request): Promise<Response> => {
+          const cookie = request.headers.get('cookie') ?? '';
+          if (cookie.includes(`${SESSION_COOKIE_NAME}=`)) {
+            return deliverSsrResponse(request);
+          }
+          return withFastPathSecurityHeaders(() =>
+            buildAssetResponse(
+              asset,
+              filepath,
+              'text/html; charset=utf-8',
+              cacheControl,
+              request
+            )
+          )(request);
+        };
+
+        return [urlPath, { GET: handler }] as const;
+      })
+  );
+  return Object.fromEntries(entries);
+};
+
+// One route per file under dist/client, including literal on-disk paths
+// like /pricing/index.html that PRERENDERED never covered (see
+// static-assets.ts's own comment) - the route table itself is now the
+// allowlist, so the old path-traversal guard (path.resolve + startsWith
+// check) has nothing left to guard against: every servable path was
+// discovered from a real directory glob at boot, nothing is resolved from
+// a request-supplied pathname at request time anymore.
+//
+// Both route sets are built concurrently, not sequentially - each involves
+// reading/gzipping/hashing every eligible file under dist/client, real work
+// that adds meaningful startup latency if serialized.
+const [prerenderedRoutes, staticAssetRoutesRaw] = await Promise.all([
+  buildPrerenderedRoutes(),
+  buildStaticAssetRoutes(
+    distClient,
+    MIME,
+    SEO_CACHE_CONTROL,
+    assetPreloadConfig
+  )
+]);
+const staticAssetRoutes = Object.fromEntries(
+  Object.entries(staticAssetRoutesRaw).map(([urlPath, { GET }]) => [
+    urlPath,
+    { GET: withFastPathSecurityHeaders(GET) }
+  ])
+);
+
 Bun.serve({
   port: PORT,
   reusePort: true,
@@ -184,82 +307,30 @@ Bun.serve({
   // once it added SSE dashboards, and the same gap exists here unnoticed
   // until something adds a long-lived connection.
   idleTimeout: 65,
-  async fetch(request) {
-    const url = new URL(request.url);
-
-    if (request.method === 'GET') {
-      // Prerendered HTML , skip for authenticated users so SSR runs beforeLoad
-      const htmlPath = PRERENDERED[url.pathname];
-      if (htmlPath && fs.existsSync(htmlPath)) {
-        const cookie = request.headers.get('cookie') ?? '';
-        if (!cookie.includes(`${SESSION_COOKIE_NAME}=`)) {
-          const headers = new Headers({
-            'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': AUTH_PRERENDERED_PATHS.has(url.pathname)
-              ? AUTH_PAGE_CACHE_CONTROL
-              : LANDING_PAGE_CACHE_CONTROL
-          });
-          applySecurityHeaders(headers, true);
-          return new Response(Bun.file(htmlPath), { headers });
-        }
-      }
-
-      // Static assets from dist/client , guard against path traversal
-      const resolved = path.resolve(distClient, url.pathname.slice(1));
-      if (
-        resolved.startsWith(distClient + path.sep) &&
-        fs.existsSync(resolved)
-      ) {
-        const stat = fs.statSync(resolved);
-        if (stat.isFile()) {
-          const ext = path.extname(resolved).toLowerCase();
-          const mime = MIME[ext] ?? 'application/octet-stream';
-          // /assets/* filenames are content-hashed , safe to cache forever
-          const isHashed = url.pathname.startsWith('/assets/');
-          const headers = new Headers({
-            'Content-Type': mime,
-            'Cache-Control':
-              SEO_CACHE_CONTROL[url.pathname] ??
-              (isHashed
-                ? 'public, max-age=31536000, immutable'
-                : 'public, max-age=0, must-revalidate')
-          });
-          applySecurityHeaders(headers, true);
-          return new Response(Bun.file(resolved), { headers });
-        }
-      }
-
-      // A missing hashed asset (deleted old release, stale cached HTML
-      // referencing a chunk that no longer exists) must 404 here rather than
-      // fall through to the SSR handler below, which would return the SPA
-      // document with a 200. A browser dynamic-import expecting a JS module
-      // and getting an HTML document back throws a confusing generic
-      // TypeError deep in whatever code destructures the (garbage) module
-      // exports, instead of the clean, detectable
-      // "Failed to fetch dynamically imported module" error.
-      if (url.pathname.startsWith('/assets/')) {
-        return new Response('Not found', { status: 404 });
-      }
-    }
-
-    // Not just a passthrough: a thrown redirect() and the router's
-    // not-found handling both produce a Response that never reaches
-    // securityMiddleware's setResponseHeader calls in src/start.ts (that
-    // middleware only decorates the response TanStack Start itself builds
-    // for a resolved route, not a Response thrown mid-loader) - confirmed
-    // via manual curl against a redirecting route and a nonexistent path,
-    // both missing HSTS/CSP/X-Frame-Options while a normal 200 SSR page
-    // carried them correctly. Re-applying here guarantees every response
-    // leaving this process carries the headers, regardless of which
-    // internal path produced it.
-    const response = await ssr.fetch(request);
-    const headers = new Headers(response.headers);
+  routes: {
+    ...prerenderedRoutes,
+    ...staticAssetRoutes,
+    // A missing hashed asset (deleted old release, stale cached HTML
+    // referencing a chunk that no longer exists) must 404 here rather than
+    // fall through to the SSR handler below, which would return the SPA
+    // document with a 200. A browser dynamic-import expecting a JS module
+    // and getting an HTML document back throws a confusing generic
+    // TypeError deep in whatever code destructures the (garbage) module
+    // exports, instead of the clean, detectable "Failed to fetch
+    // dynamically imported module" error. Matches before this refactor
+    // exactly, including that it's the one response in this file with no
+    // security headers applied - not touched, only relocated.
+    '/assets/*': () => new Response('Not found', { status: 404 }),
+    // Plain handler, not GET-scoped - server functions (POST), API routes
+    // (PUT/DELETE/etc), and every other method all need to reach real SSR
+    // here, not just GET requests to unmatched paths.
+    '/*': deliverSsrResponse
+  },
+  error(error) {
+    log.error({ error }, 'uncaught server error');
+    const headers = new Headers();
     applySecurityHeaders(headers, process.env.NODE_ENV === 'production');
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers
-    });
+    return new Response('Internal Server Error', { status: 500, headers });
   }
 });
 

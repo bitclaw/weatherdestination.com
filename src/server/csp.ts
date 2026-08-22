@@ -78,9 +78,15 @@ export function buildCsp(isProduction: boolean): string {
 // Shared with server/start.ts's prerendered-HTML and static-asset fast
 // paths, which construct Response objects directly and never pass through
 // src/start.ts's securityMiddleware (that only runs for requests reaching
-// ssr.fetch()). server/start.ts is the production entrypoint only, so it
-// always calls this with isProduction=true - no NODE_ENV branching needed
-// there the way securityMiddleware needs it for local dev.
+// ssr.fetch()). server/start.ts's own fast paths (prerendered HTML with no
+// session cookie, static assets) always call this with isProduction=true -
+// they only exist once a real build has run, so there's nothing to relax
+// for local dev. But server/start.ts is a production entrypoint that still
+// delegates to real SSR (a logged-in visitor hitting a prerendered path, or
+// any route not covered by the fast paths), and those calls use
+// `process.env.NODE_ENV === 'production'` like securityMiddleware does -
+// this file is not the single source of the isProduction value, callers
+// decide per response category.
 export function applySecurityHeaders(
   headers: Headers,
   isProduction: boolean

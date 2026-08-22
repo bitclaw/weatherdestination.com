@@ -160,6 +160,46 @@ if (!reconciled) {
 
 console.info('✓ Startup reconcilers ran');
 
+// "Workers started" and "reconcilers ran" both log early - historically
+// immediately followed by the synchronous Bun.serve() call, so waiting for
+// those log lines happened to also mean the port was open. That's no longer
+// true: server/start.ts now does real work (reading, gzipping, and hashing
+// every preloadable file under dist/client) between starting workers and
+// actually calling Bun.serve(). Poll for the port directly instead of
+// assuming it's open.
+const waitForPort = async (
+  url: string,
+  timeoutMs: number
+): Promise<boolean> => {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(500) });
+      if (res.ok || res.status < 500) return true;
+    } catch {
+      // Connection refused / not listening yet - keep polling.
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  return false;
+};
+
+const serverReady = await waitForPort(
+  `http://localhost:${PORT}/`,
+  BOOT_TIMEOUT_MS
+);
+
+if (!serverReady) {
+  console.error(
+    `❌ Server never accepted connections on port ${PORT} within ${BOOT_TIMEOUT_MS}ms.`
+  );
+  dumpOutput();
+  proc.kill('SIGKILL');
+  process.exit(1);
+}
+
+console.info('✓ Server accepting connections');
+
 // Real HTTP requests against the booted server, not static analysis - the
 // prerendered-HTML path, a static asset, and the SSR fallback each build
 // their response headers differently (see server/start.ts and
@@ -307,6 +347,65 @@ await assertSeoStaticFile(
 console.info(
   '✓ /robots.txt and /sitemap.xml served prerendered, correct headers'
 );
+
+// Regression check for the ETag/304/gzip preload work in
+// server/start.ts + server/static-assets.ts: a first request gets an ETag,
+// a conditional repeat with a matching if-none-match gets a 304 (still
+// carrying security headers - a case that didn't exist before this work),
+// and a gzip-eligible response honors Accept-Encoding with a Vary header.
+const firstRes = await fetch(`http://localhost:${PORT}/robots.txt`);
+const etag = firstRes.headers.get('ETag');
+if (!etag) {
+  console.error('❌ /robots.txt: no ETag on first response');
+  dumpOutput();
+  proc.kill('SIGKILL');
+  process.exit(1);
+}
+console.info('✓ /robots.txt has an ETag');
+
+const conditionalRes = await fetch(`http://localhost:${PORT}/robots.txt`, {
+  headers: { 'if-none-match': etag }
+});
+const conditionalFailures: string[] = [];
+if (conditionalRes.status !== 304) {
+  conditionalFailures.push(`status ${conditionalRes.status}, expected 304`);
+}
+if (!conditionalRes.headers.get('Strict-Transport-Security')) {
+  conditionalFailures.push('304 missing security headers');
+}
+if (conditionalFailures.length > 0) {
+  console.error(
+    `❌ conditional GET /robots.txt: ${conditionalFailures.join('; ')}`
+  );
+  dumpOutput();
+  proc.kill('SIGKILL');
+  process.exit(1);
+}
+console.info('✓ Matching if-none-match returns 304 with security headers');
+
+const gzipRes = await fetch(`http://localhost:${PORT}/pricing`, {
+  headers: { 'accept-encoding': 'gzip' }
+});
+const gzipFailures: string[] = [];
+if (gzipRes.headers.get('Content-Encoding') !== 'gzip') {
+  gzipFailures.push(
+    `Content-Encoding '${gzipRes.headers.get('Content-Encoding')}', expected 'gzip'`
+  );
+}
+if (gzipRes.headers.get('Vary') !== 'Accept-Encoding') {
+  gzipFailures.push(
+    `Vary '${gzipRes.headers.get('Vary')}', expected 'Accept-Encoding'`
+  );
+}
+if (gzipFailures.length > 0) {
+  console.error(
+    `❌ /pricing with Accept-Encoding: gzip: ${gzipFailures.join('; ')}`
+  );
+  dumpOutput();
+  proc.kill('SIGKILL');
+  process.exit(1);
+}
+console.info('✓ Gzip served with Vary: Accept-Encoding when requested');
 
 proc.kill('SIGTERM');
 
