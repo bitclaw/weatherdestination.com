@@ -35,6 +35,10 @@ export const users = sqliteTable('users', {
   banned: integer('banned', { mode: 'boolean' }),
   banReason: text('ban_reason'),
   banExpires: integer('ban_expires', { mode: 'timestamp' }),
+  // better-auth two-factor plugin field
+  twoFactorEnabled: integer('two_factor_enabled', { mode: 'boolean' })
+    .notNull()
+    .default(false),
   // Metered usage credits. Deducted per AI call or other metered operation.
   credits: integer('credits').notNull().default(0),
   // Set after the first re-engagement email is sent. Prevents duplicate sends.
@@ -68,6 +72,21 @@ export const accounts = sqliteTable(
     id: text('id').primaryKey(),
     accountId: text('account_id').notNull(),
     providerId: text('provider_id').notNull(),
+    // better-auth 1.7+ field. Nullable deliberately: SQLite rejects ADD
+    // COLUMN ... NOT NULL with no default on a non-empty table, and a
+    // deployment migrating from a pre-1.7 install may already have account
+    // rows. better-auth's adapter always supplies issuer for every row it
+    // writes going forward - null only exists on pre-1.7 rows until a
+    // one-time backfill runs (no backfill script ships in this app - no
+    // fresh clone of it has pre-1.7 rows to migrate; a deployment
+    // upgrading in place should backfill existing rows before relying on
+    // the new (issuer, accountId) uniqueness: real OIDC issuer for
+    // providers that declare one, e.g. Google's
+    // "https://accounts.google.com"; synthetic local:oauth:<providerId>
+    // for those that don't, e.g. GitHub/GitLab/Bitbucket - compute these
+    // via @better-auth/core's exported createOAuthAccountIssuer()/
+    // provider.accountIssuer, do not hand-guess the strings).
+    issuer: text('issuer'),
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -86,9 +105,11 @@ export const accounts = sqliteTable(
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
   },
   table => [
-    // One external OAuth identity can only ever link to one app user.
-    uniqueIndex('accounts_provider_account_unique').on(
-      table.providerId,
+    // better-auth 1.7+ resolves account identity by (issuer, accountId), not
+    // (providerId, accountId) - SQLite treats NULL as distinct in a unique
+    // index, so this coexists safely with pre-backfill null issuer values.
+    uniqueIndex('accounts_issuer_account_unique').on(
+      table.issuer,
       table.accountId
     ),
     index('accounts_user_id_idx').on(table.userId)
@@ -106,6 +127,25 @@ export const verifications = sqliteTable(
     updatedAt: integer('updated_at', { mode: 'timestamp' })
   },
   table => [index('verifications_identifier_idx').on(table.identifier)]
+);
+
+export const twoFactor = sqliteTable(
+  'two_factor',
+  {
+    id: text('id').primaryKey(),
+    // Plugin-encrypted at rest by better-auth itself (symmetricEncrypt) -
+    // not app-hashed, the Bun.CryptoHasher pattern used elsewhere does not
+    // apply here.
+    secret: text('secret').notNull(),
+    backupCodes: text('backup_codes').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    verified: integer('verified', { mode: 'boolean' }).default(true),
+    failedVerificationCount: integer('failed_verification_count').default(0),
+    lockedUntil: integer('locked_until', { mode: 'timestamp' })
+  },
+  table => [index('two_factor_user_id_idx').on(table.userId)]
 );
 
 // ---------------------------------------------------------------------------

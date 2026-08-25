@@ -1,0 +1,16 @@
+CREATE TABLE `two_factor` (
+	`id` text PRIMARY KEY NOT NULL,
+	`secret` text NOT NULL,
+	`backup_codes` text NOT NULL,
+	`user_id` text NOT NULL,
+	`verified` integer DEFAULT true,
+	`failed_verification_count` integer DEFAULT 0,
+	`locked_until` integer,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `two_factor_user_id_idx` ON `two_factor` (`user_id`);--> statement-breakpoint
+DROP INDEX `accounts_provider_account_unique`;--> statement-breakpoint
+ALTER TABLE `accounts` ADD `issuer` text;--> statement-breakpoint
+CREATE UNIQUE INDEX `accounts_issuer_account_unique` ON `accounts` (`issuer`,`account_id`);--> statement-breakpoint
+ALTER TABLE `users` ADD `two_factor_enabled` integer DEFAULT false NOT NULL;

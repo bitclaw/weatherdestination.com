@@ -2,13 +2,15 @@ import { isDisposableEmail } from '@bitclaw/disposable-email';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { createAuthMiddleware } from 'better-auth/api';
+import { deleteSessionCookie } from 'better-auth/cookies';
 import {
   admin as adminPlugin,
   captcha,
   emailOTP,
   genericOAuth,
   magicLink,
-  multiSession
+  multiSession,
+  twoFactor
 } from 'better-auth/plugins';
 import { tanstackStartCookies } from 'better-auth/tanstack-start';
 import { eq } from 'drizzle-orm';
@@ -31,6 +33,74 @@ const useOtp = method === 'otp' || method === 'both';
 const useMagicLink = method === 'magic-link' || method === 'both';
 
 const isDev = process.env.NODE_ENV !== 'production';
+
+// Cookie name for a pending 2FA challenge - matches better-auth's own
+// TWO_FACTOR_COOKIE_NAME (better-auth/dist/plugins/two-factor/constant.mjs),
+// which is NOT re-exported from better-auth/plugins's public barrel, so this
+// string is hardcoded here.
+const TWO_FACTOR_COOKIE_NAME = 'two_factor';
+const TWO_FACTOR_COOKIE_MAX_AGE = 600; // seconds - matches the plugin's own default
+
+// Bridges better-auth's built-in 2FA sign-in gate, which only matches
+// /sign-in/email|username|phone-number (credential auth) - confirmed
+// directly against the installed better-auth@1.7.1 package's own matcher.
+// This app is 100% passwordless (emailOTP/magicLink/social), so the
+// built-in gate never fires for any sign-in path this app actually uses.
+// Without this bridge, a 2FA-enabled user gets a fully valid session on
+// email-OTP/magic-link/OAuth sign-in with no code prompt at all - a real
+// auth bypass, not a UX gap. Replicates the built-in gate's own mechanism
+// (better-auth/dist/plugins/two-factor/index.mjs) exactly: delete the
+// session that was just created, write a pending-2FA verification record +
+// signed cookie in the same shape the plugin's own verify-totp/
+// verify-backup-code endpoints already know how to read (see
+// verify-two-factor.mjs's no-session branch).
+//
+// Returns true if a challenge was created (caller must not let the original
+// session/response stand), false if 2FA isn't enabled for this user (caller
+// does nothing further).
+export const bridgeTwoFactorChallenge = async (
+  ctx: Parameters<Parameters<typeof createAuthMiddleware>[0]>[0],
+  // Injectable with a real default so this function's own logic - the
+  // verification-record + cookie writes - is unit-testable without needing
+  // a fake ctx that also satisfies deleteSessionCookie's much larger
+  // internal ctx.context.authCookies/oauthConfig/options requirement.
+  deleteSessionCookieFn: typeof deleteSessionCookie = deleteSessionCookie
+): Promise<boolean> => {
+  const data = ctx.context.newSession;
+  if (!data?.user.twoFactorEnabled) return false;
+
+  deleteSessionCookieFn(ctx, true);
+  await ctx.context.internalAdapter.deleteSession(data.session.token);
+  ctx.context.setNewSession(null);
+
+  const twoFactorCookie = ctx.context.createAuthCookie(TWO_FACTOR_COOKIE_NAME, {
+    maxAge: TWO_FACTOR_COOKIE_MAX_AGE
+  });
+  const identifier = `2fa-${crypto.randomUUID()}`;
+  const expiresAt = new Date(Date.now() + TWO_FACTOR_COOKIE_MAX_AGE * 1000);
+
+  await ctx.context.internalAdapter.createVerificationValue({
+    value: data.user.id,
+    identifier,
+    expiresAt
+  });
+  // The plugin's own beginAttempt() (verify-two-factor.mjs) requires this
+  // companion record to exist - without it every verify call fails with
+  // INVALID_TWO_FACTOR_COOKIE regardless of the code entered.
+  await ctx.context.internalAdapter.createVerificationValue({
+    value: '0',
+    identifier: `2fa-attempts-${identifier}`,
+    expiresAt
+  });
+  await ctx.setSignedCookie(
+    twoFactorCookie.name,
+    identifier,
+    ctx.context.secret,
+    twoFactorCookie.attributes
+  );
+
+  return true;
+};
 
 // Stored in globalThis so it survives HMR , same pattern as better-auth's own global state.
 // Prevents duplicate welcome email enqueues when the hook fires multiple times per signup.
@@ -82,7 +152,8 @@ export const auth = betterAuth({
       user: schema.users,
       session: schema.sessions,
       account: schema.accounts,
-      verification: schema.verifications
+      verification: schema.verifications,
+      twoFactor: schema.twoFactor
     }
   }),
   advanced: {
@@ -119,21 +190,67 @@ export const auth = betterAuth({
     // mistake since it looks similar), so the path match happens inside the
     // one handler instead of via a separate matcher function.
     after: createAuthMiddleware(async ctx => {
-      if (ctx.path !== '/admin/impersonate-user') return;
-      // Durable, unconditional audit write - fires whenever better-auth's
-      // own endpoint actually creates an impersonation session, regardless
-      // of whether the client called this app's adminImpersonateUserFn
-      // first (see admin-audit-log.server.ts's header comment for why that
-      // function alone can't be the audit trail).
-      const adminUserId = ctx.context.session?.user.id;
-      const targetUserId = (ctx.body as { userId?: string } | undefined)
-        ?.userId;
-      if (!adminUserId || !targetUserId) return;
-      await recordAdminAuditEvent(db, {
-        type: 'admin.impersonation.started',
-        adminUserId,
-        targetUserId
-      });
+      if (ctx.path === '/admin/impersonate-user') {
+        // Durable, unconditional audit write - fires whenever better-auth's
+        // own endpoint actually creates an impersonation session, regardless
+        // of whether the client called this app's adminImpersonateUserFn
+        // first (see admin-audit-log.server.ts's header comment for why
+        // that function alone can't be the audit trail).
+        const adminUserId = ctx.context.session?.user.id;
+        const targetUserId = (ctx.body as { userId?: string } | undefined)
+          ?.userId;
+        if (!adminUserId || !targetUserId) return;
+        await recordAdminAuditEvent(db, {
+          type: 'admin.impersonation.started',
+          adminUserId,
+          targetUserId
+        });
+        return;
+      }
+
+      // Branch A - email-OTP sign-in. JSON response path: the client's
+      // authClient.signIn.emailOtp() call reads this shape directly.
+      if (ctx.path === '/sign-in/email-otp') {
+        const challenged = await bridgeTwoFactorChallenge(ctx);
+        if (!challenged) return;
+        return ctx.json({
+          twoFactorRedirect: true,
+          twoFactorMethods: ['totp']
+        });
+      }
+
+      // Branch B - magic-link verify. Redirect path: this is a plain GET
+      // hit from the emailed link, no client JS in the loop, so the
+      // challenge has to be a redirect override, not a JSON body. The
+      // original destination is a plain, publicly-readable query param on
+      // this same request (ctx.query.callbackURL).
+      if (ctx.path === '/magic-link/verify') {
+        const challenged = await bridgeTwoFactorChallenge(ctx);
+        if (!challenged) return;
+        const callbackURL =
+          typeof ctx.query?.callbackURL === 'string'
+            ? ctx.query.callbackURL
+            : '/';
+        throw ctx.redirect(
+          `/two-factor?redirectTo=${encodeURIComponent(callbackURL)}`
+        );
+      }
+
+      // Branch C - social/OAuth callback (all providers: Google/GitHub/
+      // GitLab built-in social, Bitbucket via genericOAuth - one branch
+      // covers every provider via the shared /callback/:id path prefix).
+      // Same bypass class as Branch A/B: better-auth's built-in 2FA gate
+      // never matches OAuth callbacks either. Unlike magic-link, the
+      // original destination here is embedded in a signed `state` param
+      // this app doesn't have a public API to re-parse, so this
+      // deliberately does not carry a redirectTo through - the post-2FA
+      // destination falls back to the app's standard post-login landing
+      // page instead of the OAuth-specific one.
+      if (ctx.path.startsWith('/callback/')) {
+        const challenged = await bridgeTwoFactorChallenge(ctx);
+        if (!challenged) return;
+        throw ctx.redirect('/two-factor');
+      }
     })
   },
   session: {
@@ -211,6 +328,19 @@ export const auth = betterAuth({
     adminPlugin({ defaultRole: 'user' }),
     multiSession({ maximumSessions: 5 }),
     tanstackStartCookies(),
+    twoFactor({
+      issuer: config.appName,
+      // Mandatory: this app has zero password auth anywhere (OTP/magic-link/
+      // social only). Without this, enable/disable hard-require a `password`
+      // field this app's users can never supply.
+      allowPasswordless: true,
+      backupCodeOptions: { amount: 10, length: 8 }
+      // skipVerificationOnEnable left at its default (false): require a
+      // confirmed working TOTP code before 2FA goes live, avoids
+      // self-lockout. otpOptions/accountLockout left unset: library
+      // defaults apply (accountLockout is on by default in 1.7.1, locks 15
+      // min after 10 failed verifications).
+    }),
     ...(process.env.BITBUCKET_CLIENT_ID
       ? [
           genericOAuth({

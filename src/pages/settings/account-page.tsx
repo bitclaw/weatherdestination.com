@@ -8,7 +8,8 @@ import { toast } from '@/components/ui/toast';
 import {
   accountSessionsQueryOptions,
   deleteMyAccountFn,
-  exportMyDataFn
+  exportMyDataFn,
+  TwoFactorSection
 } from '@/features/account';
 import { authClient } from '@/lib/auth-client';
 import type { AppUser } from '@/lib/types';
@@ -99,7 +100,8 @@ export function AccountPage({ user: _user }: Props) {
     }
   };
 
-  const { data: currentSessionData } = authClient.useSession();
+  const { data: currentSessionData, refetch: refetchSession } =
+    authClient.useSession();
   const currentToken = currentSessionData?.session.token;
   const sessions = data.sessions;
   const needsFreshSession = data.needsFreshSession;
@@ -185,6 +187,13 @@ export function AccountPage({ user: _user }: Props) {
             </ul>
           )}
         </div>
+
+        <Separator />
+
+        <TwoFactorSection
+          enabled={currentSessionData?.user.twoFactorEnabled ?? false}
+          onRefetch={refetchSession}
+        />
 
         <Separator />
 

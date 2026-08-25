@@ -196,13 +196,26 @@ export function LoginPage() {
     setError(null);
     setIsLoading(true);
     try {
-      const { error: verifyError } = await authClient.signIn.emailOtp({
+      const { data, error: verifyError } = await authClient.signIn.emailOtp({
         email,
         otp: code
       });
       if (verifyError) {
         setError(verifyError.message ?? 'Invalid code');
         setIsLoading(false);
+        return;
+      }
+      // 2FA-enabled account: auth.ts's hooks.after (bridgeTwoFactorChallenge,
+      // Branch A) deletes the session this call would otherwise have
+      // created and returns this flag instead - no session exists yet,
+      // route to the challenge page rather than the dashboard.
+      if (data && 'twoFactorRedirect' in data && data.twoFactorRedirect) {
+        queryClient.removeQueries({ queryKey: bootstrapQueryKey() });
+        await navigate({
+          to: '/two-factor',
+          search: { redirectTo: destination },
+          replace: true
+        });
         return;
       }
       await navigateAfterAuth();

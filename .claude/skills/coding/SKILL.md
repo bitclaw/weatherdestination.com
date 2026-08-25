@@ -207,6 +207,8 @@ const { data } = useSuspenseQuery(bootstrapQueryOptions);
 
 `useQuery` (not suspense) is fine for secondary, non-route-blocking data. See CLAUDE.md's "Query Keys" section for key-factory naming and placement , this section is about the load/read contract, that one's about the key itself.
 
+**Exception , never prefetch a `queryFn` that calls `authClient.*` (better-auth's browser client SDK).** `createAuthClient()` in `auth-client.ts` has no explicit `baseURL`, so the client falls back to a relative `/api/auth` path , that resolves fine in a browser (against the page's own origin) but throws `fetch() URL is invalid` in the window-less SSR context a route loader runs in. This isn't just that one query failing: the thrown error gets dehydrated into the query stream, and the client re-throws it into the route's `ErrorBoundary` before anything on the page renders , the whole route goes blank. `accountSessionsQueryOptions` (`src/features/account/index.ts`) hit exactly this in production; its own header comment has the full trace. Any `queryOptions` whose `queryFn` calls `authClient.*` must be `useSuspenseQuery`-only, with **no** `ensureQueryData`/`prefetchQuery` in a loader , let it fetch purely client-side.
+
 ### Avoid useEffect
 
 [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect) , prefer TanStack Router loaders, `useQuery`/`useSuspenseQuery`, event handlers, or derived state.

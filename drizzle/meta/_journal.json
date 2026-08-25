@@ -29,6 +29,13 @@
       "when": 1786557349363,
       "tag": "0003_classy_fat_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1787627703496,
+      "tag": "0004_shallow_havok",
+      "breakpoints": true
     }
   ]
 }
