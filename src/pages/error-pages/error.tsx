@@ -3,14 +3,25 @@ import { Link } from '@tanstack/react-router';
 import { AlertTriangle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-type Props = { error: unknown; reset?: () => void };
+type Props = {
+  error: unknown;
+  reset?: () => void;
+  // Set when the caller (Sentry's own <ErrorBoundary fallback>) already
+  // captured the exception and computed an event id itself - skips this
+  // component's own captureException call so the same error isn't reported
+  // twice under two different event ids.
+  eventId?: string | null;
+};
 
-export function ErrorPage({ error, reset }: Props) {
-  const [eventId, setEventId] = useState<string | null>(null);
+export function ErrorPage({ error, reset, eventId: providedEventId }: Props) {
+  const [eventId, setEventId] = useState<string | null>(
+    providedEventId ?? null
+  );
 
   useEffect(() => {
+    if (providedEventId !== undefined) return;
     setEventId(captureException(error));
-  }, [error]);
+  }, [error, providedEventId]);
 
   const message =
     error instanceof Error && process.env.NODE_ENV === 'development'

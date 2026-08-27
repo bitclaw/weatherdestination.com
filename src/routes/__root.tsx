@@ -216,7 +216,11 @@ function RootComponent() {
         <body className="h-full">
           <NavigationProgress />
           {isAppRoute && <AppLoadingShell />}
-          <ErrorBoundary>
+          <ErrorBoundary
+            fallback={({ error, eventId, resetError }) => (
+              <ErrorPage error={error} eventId={eventId} reset={resetError} />
+            )}
+          >
             <Outlet />
           </ErrorBoundary>
           <CrispChat />
