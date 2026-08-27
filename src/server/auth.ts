@@ -327,7 +327,6 @@ export const auth = betterAuth({
       : []),
     adminPlugin({ defaultRole: 'user' }),
     multiSession({ maximumSessions: 5 }),
-    tanstackStartCookies(),
     twoFactor({
       issuer: config.appName,
       // Mandatory: this app has zero password auth anywhere (OTP/magic-link/
@@ -389,7 +388,15 @@ export const auth = betterAuth({
             endpoints: getTurnstileProtectedEndpoints(method)
           })
         ]
-      : [])
+      : []),
+    // Must be LAST: better-auth's own cookie-plugin-guard warns (at request
+    // time, on the first real request through the auth handler - not at
+    // construction) whenever a plugin registered after this one declares
+    // its own hooks.after - twoFactor does internally (its built-in
+    // credential-sign-in 2FA gate, unused by this passwordless app but
+    // still registered). Any Set-Cookie those later hooks emit would not be
+    // forwarded to the framework's cookie store if this ran first.
+    tanstackStartCookies()
   ]
 });
 
