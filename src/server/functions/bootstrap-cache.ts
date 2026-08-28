@@ -1,4 +1,4 @@
-import { TTLCache } from '@bitclaw/sqlite/ttl-cache';
+import { TTLCache } from '@bitclaw/server-kit/ttl-cache';
 import type { PlanKey } from '@/config';
 
 // Split from bootstrap.ts so server-side mutations (webhook handlers, admin,
