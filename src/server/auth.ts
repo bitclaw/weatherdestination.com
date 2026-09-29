@@ -120,6 +120,20 @@ export const auth = betterAuth({
         protocol: 'http'
       }
     : (process.env.BETTER_AUTH_URL ?? `https://${config.domainName}`),
+  // GitLab's GET /api/v4/user has no email_verified field, so better-auth's
+  // built-in gitlab provider always reports emailVerified: false and refuses
+  // to auto-link a GitLab sign-in to an existing account with the same
+  // email ("account not linked"), unlike GitHub/Google. Trusting it is safe
+  // for gitlab.com: email_confirmation_setting is hard there (no sign-in
+  // before confirming, docs.gitlab.com/user/gitlab_com), and a changed
+  // primary email sits in Devise's unconfirmed_email until confirmed, so the
+  // email /user returns is always confirmed. Re-check before supporting a
+  // self-managed GitLab instance (that setting is instance-configurable).
+  account: {
+    accountLinking: {
+      trustedProviders: ['gitlab']
+    }
+  },
   socialProviders: {
     ...(process.env.GOOGLE_CLIENT_ID
       ? {
