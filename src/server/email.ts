@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { err, ok, type Result } from '@bitclaw/result';
 import { render } from '@react-email/render';
 import type { ReactElement } from 'react';
@@ -13,6 +14,32 @@ import {
   TrialExpiringEmail,
   WelcomeEmail
 } from './email-templates';
+
+// Job reruns (crash, timeout, retry) re-execute a handler from the start,
+// which used to re-send any email it had already delivered. The job queue
+// middleware (queue.server.ts) runs every job inside this scope, keyed by
+// `${job.type}:${job.id}` - stable across reruns - and sendEmail derives a
+// Resend idempotency key from it plus a hash of recipient + subject, so two
+// different emails from one job still get distinct keys. Resend dedupes the
+// same key for 24h. No-op outside a job, and on the SMTP path.
+const emailIdempotencyScope = new AsyncLocalStorage<string>();
+
+export const runInEmailIdempotencyScope = <T>(
+  scope: string,
+  fn: () => Promise<T>
+): Promise<T> => emailIdempotencyScope.run(scope, fn);
+
+export const idempotencyKeyFor = (params: {
+  to: string | string[];
+  subject: string;
+}): string | undefined => {
+  const scope = emailIdempotencyScope.getStore();
+  if (!scope) return undefined;
+  const digest = Bun.hash(JSON.stringify([params.to, params.subject])).toString(
+    36
+  );
+  return `${scope}:${digest}`;
+};
 
 type SendEmailParams = {
   to: string | string[];
@@ -39,6 +66,7 @@ export const sendEmail = async (
     : undefined;
 
   if (provider === 'resend') {
+    const idempotencyKey = idempotencyKeyFor(params);
     const apiKey = process.env.RESEND_API_KEY ?? '';
     if (!apiKey)
       return err(
@@ -47,13 +75,16 @@ export const sendEmail = async (
       );
 
     const resend = new Resend(apiKey);
-    const { data, error } = await resend.emails.send({
-      from: `${config.resend.fromName} <${config.resend.fromEmail}>`,
-      to: params.to,
-      subject: params.subject,
-      html,
-      ...(headers && { headers })
-    });
+    const { data, error } = await resend.emails.send(
+      {
+        from: `${config.resend.fromName} <${config.resend.fromEmail}>`,
+        to: params.to,
+        subject: params.subject,
+        html,
+        ...(headers && { headers })
+      },
+      idempotencyKey ? { idempotencyKey } : undefined
+    );
 
     if (error || !data)
       return err(

@@ -20,10 +20,9 @@ export const handleWelcomeEmail = async (
   // uniqueKey + dedup: if this handler is retried (e.g. a crash after
   // sendWelcomeEmail but before both enqueues complete), re-running these
   // calls won't double-schedule the follow-up chain - a pending job with the
-  // same (type, uniqueKey) is silently ignored. The welcome email itself has
-  // no equivalent guard (Resend has no "already sent" check we can key on),
-  // so a retry in that narrow crash window can still resend it once; that's
-  // an accepted, bounded gap, not the unbounded one this fixes.
+  // same (type, uniqueKey) is silently ignored. The welcome email itself is
+  // deduped by the per-job Resend idempotency key sendEmail derives inside
+  // the queue's email scope (see runInEmailIdempotencyScope).
   enqueue('email:onboarding-day3', job.data, {
     runAt: new Date(Date.now() + 3 * DAY_MS),
     uniqueKey: `email:onboarding-day3:${job.data.email}`,

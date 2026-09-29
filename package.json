@@ -42,7 +42,7 @@
     "@aws-sdk/s3-request-presigner": "3.1063.0",
     "@better-auth/utils": "0.4.2",
     "@bitclaw/disposable-email": "1.2.1",
-    "@bitclaw/jobs": "2.1.8",
+    "@bitclaw/jobs": "2.2.0",
     "@bitclaw/result": "1.2.1",
     "@bitclaw/server-kit": "0.1.0",
     "@bitclaw/sqlite": "2.0.0",
