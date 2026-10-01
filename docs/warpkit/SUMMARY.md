@@ -70,6 +70,7 @@
 - [Entitlements (plan limits)](./patterns/entitlements.md)
 - [Webhook replay](./patterns/webhook-replay.md)
 - [Lean artifact app](./patterns/lean-artifact-app.md)
+- [Dependency release age](./patterns/dependency-release-age.md)
 
 ## Components
 

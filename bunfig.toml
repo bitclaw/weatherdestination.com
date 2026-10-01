@@ -1,8 +1,10 @@
 [install]
 ignoreScripts = true
-# Only install package versions published at least 48 hours ago
-minimumReleaseAge = 172800
-minimumReleaseAgeExcludes = ["typescript", "@types/node", "@bitclaw/loadtest", "@bitclaw/sqlite", "@bitclaw/jobs", "@bitclaw/result", "@bitclaw/disposable-email", "better-auth", "@better-auth/core", "@better-auth/drizzle-adapter", "@better-auth/kysely-adapter", "@better-auth/memory-adapter", "@better-auth/mongo-adapter", "@better-auth/prisma-adapter", "@better-auth/telemetry"]
+# Only install versions published at least 3 days ago: most hijacked npm
+# releases are caught within hours. Excludes are first-party packages only.
+# Policy and the security-fix bypass: docs/warpkit/patterns/dependency-release-age.md
+minimumReleaseAge = 259200
+minimumReleaseAgeExcludes = ["@bitclaw/loadtest", "@bitclaw/sqlite", "@bitclaw/jobs", "@bitclaw/result", "@bitclaw/disposable-email"]
 
 [test]
 preload = ["./src/test/setup.ts"]
