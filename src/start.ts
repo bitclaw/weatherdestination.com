@@ -150,7 +150,10 @@ if (import.meta.env.SSR) {
 const loggerMiddleware = createMiddleware().server(
   async ({ next, context, request }) => {
     const path = new URL(request.url).pathname;
+    // Caddy's active health check hits /healthcheck every 2s per site;
+    // logging it buries every real request.
     if (
+      path !== '/healthcheck' &&
       !path.startsWith('/@') &&
       !path.startsWith('/node_modules/') &&
       !path.startsWith('/src/')
