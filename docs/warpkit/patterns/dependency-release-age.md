@@ -53,13 +53,22 @@ mitigation available). If it can't wait:
    - The version matches the vendor's advisory.
 2. Bump the versions in `package.json`.
 3. Install once with the gate lowered on the command line, not in
-   `bunfig.toml`:
+   `bunfig.toml`. Lower it only to just below the age of the newest
+   package you need, not to 0:
    ```bash
-   bun install --minimum-release-age=0
+   # fix set published ~66h ago: 230000s (~64h) admits it,
+   # rejects anything newer
+   bun install --minimum-release-age=230000
    ```
-   The new versions land in `bun.lock`; `bunfig.toml` stays unchanged, so
-   nothing else gets a free pass later. Check `git diff bun.lock`: only the
-   packages you meant to bump (and their own dependencies) should change.
+   The flag applies to the whole install, not just the bumped packages.
+   With `=0`, the TanStack upgrade on 2026-10-03 also pulled in an
+   unrelated transitive `exsolve` release that was 2 hours old; the
+   narrower value kept the older one. The new versions land in
+   `bun.lock`; `bunfig.toml` stays unchanged, so nothing else gets a free
+   pass later. Check `git diff bun.lock` and the publish time
+   (`npm view <pkg> time`) of every version it adds: only the packages
+   you meant to bump (and their own dependencies) should be newer than
+   3 days.
 4. `make fix && make ci`, commit, deploy.
 
 Transitive dependencies count too: a fix release often pins sibling
