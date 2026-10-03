@@ -62,6 +62,7 @@
 
 ## Patterns
 
+- [Timestamps](./patterns/timestamps.md)
 - [Gate ordering](./patterns/gate-ordering.md)
 - [Query keys](./patterns/query-keys.md)
 - [Import protection](./patterns/import-protection.md)
