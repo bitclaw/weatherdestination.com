@@ -201,20 +201,24 @@ export const queryAdminAnalytics = async (
   // historical months show 0 cancelled even if churn actually happened then.
   const growthRows = await db
     .select({
-      month: sql<string>`strftime('%Y-%m', ${subscriptions.createdAt}, 'unixepoch')`,
+      month: sql<string>`strftime('%Y-%m', ${subscriptions.createdAt} / 1000, 'unixepoch')`,
       count: sql<number>`count(*)`
     })
     .from(subscriptions)
-    .groupBy(sql`strftime('%Y-%m', ${subscriptions.createdAt}, 'unixepoch')`);
+    .groupBy(
+      sql`strftime('%Y-%m', ${subscriptions.createdAt} / 1000, 'unixepoch')`
+    );
 
   const cancelledRows = await db
     .select({
-      month: sql<string>`strftime('%Y-%m', ${subscriptions.cancelledAt}, 'unixepoch')`,
+      month: sql<string>`strftime('%Y-%m', ${subscriptions.cancelledAt} / 1000, 'unixepoch')`,
       count: sql<number>`count(*)`
     })
     .from(subscriptions)
     .where(sql`${subscriptions.cancelledAt} IS NOT NULL`)
-    .groupBy(sql`strftime('%Y-%m', ${subscriptions.cancelledAt}, 'unixepoch')`);
+    .groupBy(
+      sql`strftime('%Y-%m', ${subscriptions.cancelledAt} / 1000, 'unixepoch')`
+    );
 
   const months = last12Months(now);
   const newByMonth = new Map(growthRows.map(r => [r.month, r.count]));

@@ -29,12 +29,12 @@ export const users = sqliteTable('users', {
     .notNull()
     .default(false),
   // Set when an account deletion job is created. Blocks app access while deletion is in progress.
-  deletionPendingAt: integer('deletion_pending_at', { mode: 'timestamp' }),
+  deletionPendingAt: integer('deletion_pending_at', { mode: 'timestamp_ms' }),
   // better-auth admin plugin fields
   role: text('role').default('user'),
   banned: integer('banned', { mode: 'boolean' }),
   banReason: text('ban_reason'),
-  banExpires: integer('ban_expires', { mode: 'timestamp' }),
+  banExpires: integer('ban_expires', { mode: 'timestamp_ms' }),
   // better-auth two-factor plugin field
   twoFactorEnabled: integer('two_factor_enabled', { mode: 'boolean' })
     .notNull()
@@ -42,19 +42,19 @@ export const users = sqliteTable('users', {
   // Metered usage credits. Deducted per AI call or other metered operation.
   credits: integer('credits').notNull().default(0),
   // Set after the first re-engagement email is sent. Prevents duplicate sends.
-  reengagementSentAt: integer('reengagement_sent_at', { mode: 'timestamp' }),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+  reengagementSentAt: integer('reengagement_sent_at', { mode: 'timestamp_ms' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
 });
 
 export const sessions = sqliteTable(
   'sessions',
   {
     id: text('id').primaryKey(),
-    expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
     token: text('token').notNull().unique(),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
     ipAddress: text('ip_address'),
     userAgent: text('user_agent'),
     userId: text('user_id')
@@ -94,15 +94,15 @@ export const accounts = sqliteTable(
     refreshToken: text('refresh_token'),
     idToken: text('id_token'),
     accessTokenExpiresAt: integer('access_token_expires_at', {
-      mode: 'timestamp'
+      mode: 'timestamp_ms'
     }),
     refreshTokenExpiresAt: integer('refresh_token_expires_at', {
-      mode: 'timestamp'
+      mode: 'timestamp_ms'
     }),
     scope: text('scope'),
     password: text('password'),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
   },
   table => [
     // better-auth 1.7+ resolves account identity by (issuer, accountId), not
@@ -122,9 +122,9 @@ export const verifications = sqliteTable(
     id: text('id').primaryKey(),
     identifier: text('identifier').notNull(),
     value: text('value').notNull(),
-    expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
-    createdAt: integer('created_at', { mode: 'timestamp' }),
-    updatedAt: integer('updated_at', { mode: 'timestamp' })
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
   },
   table => [index('verifications_identifier_idx').on(table.identifier)]
 );
@@ -143,7 +143,7 @@ export const twoFactor = sqliteTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     verified: integer('verified', { mode: 'boolean' }).default(true),
     failedVerificationCount: integer('failed_verification_count').default(0),
-    lockedUntil: integer('locked_until', { mode: 'timestamp' })
+    lockedUntil: integer('locked_until', { mode: 'timestamp_ms' })
   },
   table => [index('two_factor_user_id_idx').on(table.userId)]
 );
@@ -186,16 +186,16 @@ export const subscriptions = sqliteTable('subscriptions', {
   status: text('status', { enum: SUBSCRIPTION_STATUSES })
     .notNull()
     .default('active'),
-  currentPeriodEnd: integer('current_period_end', { mode: 'timestamp' }),
-  trialEndsAt: integer('trial_ends_at', { mode: 'timestamp' }),
-  lastSyncedAt: integer('last_synced_at', { mode: 'timestamp' }),
+  currentPeriodEnd: integer('current_period_end', { mode: 'timestamp_ms' }),
+  trialEndsAt: integer('trial_ends_at', { mode: 'timestamp_ms' }),
+  lastSyncedAt: integer('last_synced_at', { mode: 'timestamp_ms' }),
   // Set once, on customer.subscription.deleted. Never cleared by a later
   // resubscribe - a new subscriptions row's own null cancelledAt is what
   // signals "currently active" for growth-chart purposes; this column only
   // answers "when did the subscription this row represents end."
-  cancelledAt: integer('cancelled_at', { mode: 'timestamp' }),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
+  cancelledAt: integer('cancelled_at', { mode: 'timestamp_ms' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull()
 });
 
 // ---------------------------------------------------------------------------
@@ -212,30 +212,32 @@ export const accountDeletionJobs = sqliteTable('account_deletion_jobs', {
   stripeCustomerId: text('stripe_customer_id'),
 
   // Step completion timestamps (null = not done, non-null = done)
-  stripeCancelledAt: integer('stripe_cancelled_at', { mode: 'timestamp' }),
-  stripeDeletedAt: integer('stripe_deleted_at', { mode: 'timestamp' }),
+  stripeCancelledAt: integer('stripe_cancelled_at', { mode: 'timestamp_ms' }),
+  stripeDeletedAt: integer('stripe_deleted_at', { mode: 'timestamp_ms' }),
   // Must run (and be recorded) before userDbDeletedAt - S3 keys live in the
   // per-user DB that step deletes.
-  filesDeletedAt: integer('files_deleted_at', { mode: 'timestamp' }),
-  userDbDeletedAt: integer('user_db_deleted_at', { mode: 'timestamp' }),
-  sharedUserDeletedAt: integer('shared_user_deleted_at', { mode: 'timestamp' }),
+  filesDeletedAt: integer('files_deleted_at', { mode: 'timestamp_ms' }),
+  userDbDeletedAt: integer('user_db_deleted_at', { mode: 'timestamp_ms' }),
+  sharedUserDeletedAt: integer('shared_user_deleted_at', {
+    mode: 'timestamp_ms'
+  }),
 
   // Terminal state (no failedAt - incomplete jobs are always retried)
-  completedAt: integer('completed_at', { mode: 'timestamp' }),
+  completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
 
   // Retry tracking
   attemptCount: integer('attempt_count').notNull().default(0),
-  lastAttemptAt: integer('last_attempt_at', { mode: 'timestamp' }),
+  lastAttemptAt: integer('last_attempt_at', { mode: 'timestamp_ms' }),
   lastError: text('last_error'),
 
   // Concurrency lease - prevents two workers running the same job simultaneously
-  leaseExpiresAt: integer('lease_expires_at', { mode: 'timestamp' }),
+  leaseExpiresAt: integer('lease_expires_at', { mode: 'timestamp_ms' }),
 
   initiatedBy: text('initiated_by', { enum: ['user', 'admin'] }).notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' })
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .notNull()
     .$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
     .notNull()
     .$defaultFn(() => new Date())
 });
@@ -248,9 +250,9 @@ export const accountDeletionJobs = sqliteTable('account_deletion_jobs', {
 export const trialAbuseMarkers = sqliteTable('trial_abuse_markers', {
   id: text('id').primaryKey(),
   hashedEmail: text('hashed_email').notNull().unique(),
-  deletedAt: integer('deleted_at', { mode: 'timestamp' }).notNull(),
-  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' })
+  deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }).notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .notNull()
     .$defaultFn(() => new Date())
 });
@@ -276,8 +278,8 @@ export const purchases = sqliteTable(
     creditsGranted: integer('credits_granted'),
     // Dedup marker for charge.refunded processing , same role
     // stripePaymentIntentId plays for the original grant.
-    refundedAt: integer('refunded_at', { mode: 'timestamp' }),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+    refundedAt: integer('refunded_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
   },
   table => [index('purchases_user_id_idx').on(table.userId)]
 );
@@ -299,7 +301,7 @@ export const payments = sqliteTable(
     plan: text('plan', { enum: PLAN_KEYS }).notNull(),
     amount: integer('amount').notNull(),
     currency: text('currency').notNull().default('usd'),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
   },
   table => [index('payments_user_id_idx').on(table.userId)]
 );
@@ -317,7 +319,7 @@ export const mrrSnapshots = sqliteTable('mrr_snapshots', {
   month: text('month').notNull().unique(),
   mrr: integer('mrr').notNull(),
   activeSubscribers: integer('active_subscribers').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
 });
 
 // ---------------------------------------------------------------------------
@@ -328,8 +330,8 @@ export const featureFlags = sqliteTable('feature_flags', {
   id: text('id').primaryKey(),
   flag: text('flag').notNull().unique(),
   enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
 });
 
 // ---------------------------------------------------------------------------
@@ -339,7 +341,7 @@ export const featureFlags = sqliteTable('feature_flags', {
 export const leads = sqliteTable('leads', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
 });
 
 // ---------------------------------------------------------------------------
@@ -372,8 +374,8 @@ export const cities = sqliteTable(
     avgTempLow: real('avg_temp_low').notNull(),
     costOfLivingIndex: real('cost_of_living_index'),
     airQualityIndex: integer('air_quality_index'),
-    dataLastUpdated: integer('data_last_updated', { mode: 'timestamp' }),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+    dataLastUpdated: integer('data_last_updated', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
   },
   table => [
     uniqueIndex('cities_name_state_code_idx').on(table.name, table.stateCode),
@@ -397,8 +399,8 @@ export const featureRequests = sqliteTable('feature_requests', {
   status: text('status').notNull().default('submitted'),
   priority: text('priority').notNull().default('medium'),
   category: text('category').notNull().default('other'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
 });
 
 export const featureRequestVotes = sqliteTable(
@@ -411,7 +413,7 @@ export const featureRequestVotes = sqliteTable(
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
   },
   table => [
     // DB-level "one vote per user per request" invariant, not just app logic
@@ -445,7 +447,7 @@ export const adminAuditLog = sqliteTable(
       onDelete: 'set null'
     }),
     payload: text('payload'),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
   },
   table => [index('admin_audit_log_admin_idx').on(table.adminUserId)]
 );
@@ -461,7 +463,7 @@ export const rateLimitEvents = sqliteTable(
   {
     id: text('id').primaryKey(),
     key: text('key').notNull(),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull()
   },
   table => [
     index('rate_limit_events_key_created_idx').on(table.key, table.createdAt)

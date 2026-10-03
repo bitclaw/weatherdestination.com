@@ -49,12 +49,16 @@ The cost is readability: a raw value is a number. See Reading values below.
 - Provider APIs that return seconds (OAuth `expires_in`, Unix timestamps):
   convert with `msFromSeconds()` at the boundary.
 - Drizzle: pass `Date` objects; `$defaultFn(() => new Date())` is correct.
+- SQLite date functions on a column: divide by 1000 first,
+  `strftime('%Y-%m', ${table.createdAt} / 1000, 'unixepoch')`. The
+  `'unixepoch'` modifier reads seconds.
 - Postgres: pass `Date` objects.
 
 ## Enforcement
 
 - **`make check-sql-time`** (part of `make ci`) fails on a SQLite clock
-  function in app code outside `src/lib/db/migrations/`.
+  function in app code outside `src/lib/db/migrations/`, and on a
+  `'unixepoch'` modifier without `/ 1000` on the same line.
 - **Guard triggers** on every SQLite DB, installed on every open (and by
   `makeTestDb()`), so tests and production both enforce the rule. Each
   timestamp column gets a `BEFORE INSERT` and `BEFORE UPDATE` trigger:
@@ -77,11 +81,14 @@ The cost is readability: a raw value is a number. See Reading values below.
 
 ## Migrating a SQLite repo to this rule
 
-1. **Check before multiplying.** For every `mode: 'timestamp'` column,
-   abort if any value is ≥ 1e11. Such a column is already ms despite its
-   declaration, and ×1000 would turn it into garbage.
-2. Multiply every `mode: 'timestamp'` column by 1000 and switch the schema to
-   `mode: 'timestamp_ms'`.
+1. **Convert only seconds-scale values.** Multiply a value by 1000 only when
+   it is an integer strictly between 0 and 1e11. A value already ≥ 1e11 is
+   ms despite the old declaration and is left alone, so nothing can be
+   doubled and the migration is safe to re-run.
+2. **One UPDATE per table**, converting all its timestamp columns at once.
+   The guard triggers check every column of a row, so a per-column update
+   would abort on the row's not-yet-converted columns. Then switch the
+   schema to `mode: 'timestamp_ms'`.
 3. Fix any raw writer that is not ms (the settings helper's `unixepoch()`).
 4. Add `src/lib/time.ts`, the guard, its coverage test and
    `make check-sql-time`.

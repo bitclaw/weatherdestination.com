@@ -9,6 +9,7 @@ import { migration as m007 } from './migrations/20260608_000700_add_notes';
 import { migration as m008 } from './migrations/20260608_000800_add_files';
 import { migration as m009 } from './migrations/20260609_000900_add_settings';
 import { migration as m011 } from './migrations/20260702_220044_hash_api_keys';
+import { migration as m012 } from './migrations/20261003_120000_timestamps_ms';
 
 // =============================================================================
 // USER DATABASE MIGRATION RUNNER
@@ -45,7 +46,8 @@ export const USER_MIGRATIONS: UserMigration[] = [
   m007,
   m008,
   m009,
-  m011
+  m011,
+  m012
 ];
 
 export const validateMigrations = (migrations: UserMigration[]): void => {

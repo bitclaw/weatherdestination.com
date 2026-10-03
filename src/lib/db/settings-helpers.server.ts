@@ -1,5 +1,6 @@
 import type { Database } from 'bun:sqlite';
 import crypto from 'node:crypto';
+import { nowMs } from '@/lib/time';
 
 const ALGORITHM = 'aes-256-gcm';
 // NIST SP 800-38D specifies 96 bits (12 bytes) for GCM; 16 was a gratuitous
@@ -49,9 +50,9 @@ export const getSetting = (db: Database, key: string): string | null => {
 
 export const setSetting = (db: Database, key: string, value: string): void => {
   db.run(
-    `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, unixepoch())
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = unixepoch()`,
-    [key, value]
+    `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+    [key, value, nowMs()]
   );
 };
 

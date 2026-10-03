@@ -3,7 +3,7 @@
 .PHONY: help init scaffold install dev build start start.cluster typecheck lint fix test test.watch \
         test.load test.load.quick e2e e2e.all e2e.ui e2e.webkit e2e.report e2e.setup dev.e2e \
         db.generate db.migrate db.seed db.studio clean ci knip favicons \
-        mail.up mail.down mail.logs loadtest.seed check-error-codes \
+        mail.up mail.down mail.logs loadtest.seed check-error-codes check-sql-time \
         check-barrel-pages check-prefetch-bare check-webhook-idempotency \
         check-client-bundle-leaks check-ratelimit-keying check-weak-types stripe.setup \
         stripe.webhook.setup github.oauth.setup changelog.draft
@@ -146,7 +146,16 @@ ci: ## Run full CI pipeline locally (build first so generated content is availab
 	# prepare() fails with "no such table". A local dev DB already has
 	# migrations applied, which is why this only ever broke in CI.
 	@bun run db:migrate
-	@$(MAKE) lint knip test check-error-codes check-barrel-pages check-prefetch-bare check-webhook-idempotency check-client-bundle-leaks check-boot check-ratelimit-keying check-weak-types check-exact-deps
+	@$(MAKE) lint knip test check-error-codes check-barrel-pages check-prefetch-bare check-webhook-idempotency check-client-bundle-leaks check-boot check-ratelimit-keying check-weak-types check-exact-deps check-sql-time
+
+check-sql-time: ## Fail on SQLite clock functions in app code (timestamps are nowMs() epoch ms)
+	@hits=$$( { grep -rnE --include="*.ts" --include="*.tsx" "datetime\('now'\)|CURRENT_TIMESTAMP|unixepoch\(|strftime\('%s'" src/; \
+	  grep -rn --include="*.ts" --include="*.tsx" "'unixepoch'" src/ | grep -v "/ 1000"; } \
+	  | grep -v "^src/lib/db/migrations/" | grep -v "\.test\.tsx\?:"); \
+	if [ -n "$$hits" ]; then \
+	  echo "❌ SQLite clock function, or a column read as seconds ('unixepoch' without / 1000), in app code. Pass nowMs(); divide ms columns by 1000:"; \
+	  echo "$$hits"; echo "   See docs/warpkit/patterns/timestamps.md"; exit 1; \
+	fi
 
 check-exact-deps: ## Fail if package.json has any non-exact version specifier (^, ~, etc.)
 	@bun run scripts/check-exact-deps.ts

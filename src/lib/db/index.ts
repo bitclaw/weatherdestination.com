@@ -5,6 +5,10 @@ import { setWalModeWithRetry } from '@bitclaw/sqlite/wal-mode';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import * as schema from './schema';
 import { sqlLog } from './sql-logger';
+import {
+  drizzleTimestampColumns,
+  installTimestampGuards
+} from './timestamp-guards';
 
 // weak-type-ok: standard globalThis-extension idiom, no structural TS way to type this
 const globalForDb = globalThis as unknown as {
@@ -51,6 +55,10 @@ const createDb = () => {
       sqlLog.debug({ params }, query);
     }
   };
+
+  // Guards existing tables now; tables a pending migration creates get
+  // theirs on the next boot (timestamp-guards.ts).
+  installTimestampGuards(sqlite, drizzleTimestampColumns(schema));
 
   return { sqlite, drizzleDb: drizzle(sqlite, { schema, logger }) };
 };

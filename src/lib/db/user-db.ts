@@ -2,7 +2,9 @@ import type { Database } from 'bun:sqlite';
 import path from 'node:path';
 import { createTenantDbManager } from '@bitclaw/sqlite/tenant-db';
 import { sqlLog } from './sql-logger';
+import { installTimestampGuards } from './timestamp-guards';
 import { runUserMigrations } from './user-migrations';
+import { USER_DB_TIMESTAMP_COLUMNS } from './user-timestamp-columns';
 
 const formatSql = (sql: string) => sql.replace(/\s+/g, ' ').trim();
 
@@ -59,7 +61,10 @@ export const getUserDbPath = (userId: string): string => {
 };
 
 const manager = createTenantDbManager({
-  onOpen: db => runUserMigrations(db),
+  onOpen: db => {
+    runUserMigrations(db);
+    installTimestampGuards(db, USER_DB_TIMESTAMP_COLUMNS);
+  },
   wrapDb: (raw, userId) => wrapWithSqlLog(raw, `user:${userId.slice(0, 8)}`)
 });
 

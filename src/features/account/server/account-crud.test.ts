@@ -5,6 +5,9 @@ import { makeTestDb, makeTestSharedDb } from '@/test/db';
 import { makeSubscription, makeUser } from '@/test/fixtures';
 import { dumpUserDbTables } from './account.server';
 
+// A real epoch-ms base: the timestamp guard rejects seconds-scale values.
+const T0 = 1_790_000_000_000;
+
 // ---------------------------------------------------------------------------
 // Per-user SQLite (dumpUserDbTables)
 // ---------------------------------------------------------------------------
@@ -27,12 +30,12 @@ describe('dumpUserDbTables', () => {
     db.run('INSERT INTO user_events (id, type, created_at) VALUES (?, ?, ?)', [
       'a',
       'test.event',
-      1000
+      T0 + 1000
     ]);
     db.run('INSERT INTO user_events (id, type, created_at) VALUES (?, ?, ?)', [
       'b',
       'test.event',
-      2000
+      T0 + 2000
     ]);
     const result = dumpUserDbTables(db);
     expect(result.user_events).toHaveLength(2);
@@ -43,13 +46,13 @@ describe('dumpUserDbTables', () => {
     db.run('INSERT INTO user_events (id, type, created_at) VALUES (?, ?, ?)', [
       'x',
       'test.event',
-      999
+      T0 + 999
     ]);
     const result = dumpUserDbTables(db);
     expect(result.user_events?.[0]).toMatchObject({
       id: 'x',
       type: 'test.event',
-      created_at: 999
+      created_at: T0 + 999
     });
   });
 
@@ -71,7 +74,7 @@ describe('dumpUserDbTables', () => {
     db.run(
       `INSERT INTO api_keys
          (id, name, key_hash, key_preview, status, last_used_at, created_at)
-       VALUES ('k1', 'CI key', 'deadbeef', 'wk_••••••••...beef', 'active', NULL, 1000)`
+       VALUES ('k1', 'CI key', 'deadbeef', 'wk_••••••••...beef', 'active', NULL, ${T0 + 1000})`
     );
     const result = dumpUserDbTables(db);
     expect(result.api_keys).toHaveLength(1);

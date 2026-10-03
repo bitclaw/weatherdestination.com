@@ -84,10 +84,8 @@ describe('createDeletionJob', () => {
     const dbUser = await db.query.users.findFirst({
       where: eq(users.id, user.id)
     });
-    // SQLite timestamp mode stores seconds; truncate ms for comparison
-    expect(dbUser!.deletionPendingAt!.getTime()).toBe(
-      Math.floor(original.getTime() / 1000) * 1000
-    );
+    // timestamp_ms keeps full precision (docs/warpkit/patterns/timestamps.md)
+    expect(dbUser!.deletionPendingAt!.getTime()).toBe(original.getTime());
   });
 });
 
