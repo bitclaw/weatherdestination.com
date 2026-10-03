@@ -1,6 +1,7 @@
 import { randomUUIDv7 } from 'bun';
 import { and, count, eq, gte, lt } from 'drizzle-orm';
 import type { drizzle } from 'drizzle-orm/bun-sqlite';
+import { nowMs } from '@/lib/time';
 import { db as sharedDb } from './index';
 import type * as schema from './schema';
 import { rateLimitEvents } from './schema';
@@ -37,7 +38,7 @@ export function createSharedRateLimiter(db: DrizzleDb) {
   const check = async (key: string, config: Config): Promise<boolean> => {
     if (!isActive()) return false;
 
-    const since = new Date(Date.now() - config.windowMs);
+    const since = new Date(nowMs() - config.windowMs);
     const [row] = await db
       .select({ value: count() })
       .from(rateLimitEvents)
@@ -69,10 +70,7 @@ export function createSharedRateLimiter(db: DrizzleDb) {
       await db
         .delete(rateLimitEvents)
         .where(
-          lt(
-            rateLimitEvents.createdAt,
-            new Date(Date.now() - PRUNE_OLDER_THAN_MS)
-          )
+          lt(rateLimitEvents.createdAt, new Date(nowMs() - PRUNE_OLDER_THAN_MS))
         );
     }
   };

@@ -1,5 +1,6 @@
 import type { Job } from '@bitclaw/jobs';
 import type { AppJobs } from '@/features/jobs/types';
+import { nowMs } from '@/lib/time';
 
 export const handleReengagementScan = async (
   _job: Job<AppJobs['email:reengagement-scan']>
@@ -12,7 +13,7 @@ export const handleReengagementScan = async (
       import('drizzle-orm')
     ]);
 
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(nowMs() - 30 * 24 * 60 * 60 * 1000);
   const stale = await db
     .select({ id: users.id, email: users.email, name: users.name })
     .from(users)

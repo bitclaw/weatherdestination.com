@@ -3,6 +3,7 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { err, ok } from '@bitclaw/result';
 import { randomUUIDv7 } from 'bun';
 import { ERROR_CODES } from '@/lib/constants';
+import { nowMs } from '@/lib/time';
 import type { FileRecord } from '../uploads.constants';
 
 // Single source of truth for the S3 env vars , every uploads file reads the
@@ -58,7 +59,7 @@ export const addFile = (
   input: { name: string; type: string; size: number; s3Key: string }
 ) => {
   const id = randomUUIDv7();
-  const now = Date.now();
+  const now = nowMs();
   db.run(
     'INSERT INTO files (id, name, type, size, s3_key, created_at) VALUES (?, ?, ?, ?, ?, ?)',
     [id, input.name, input.type, input.size, input.s3Key, now]

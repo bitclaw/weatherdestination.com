@@ -2,6 +2,7 @@ import type { Database } from 'bun:sqlite';
 import { err, ok } from '@bitclaw/result';
 import { randomUUIDv7 } from 'bun';
 import { ERROR_CODES } from '@/lib/constants';
+import { nowMs } from '@/lib/time';
 
 export type ConversationRecord = {
   id: string;
@@ -69,7 +70,7 @@ export const insertConversation = (
   db: Database,
   input: { title: string }
 ): ConversationRecord => {
-  const now = Date.now();
+  const now = nowMs();
   const id = randomUUIDv7();
   db.run(
     'INSERT INTO conversations (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)',
@@ -94,7 +95,7 @@ export const insertMessage = (
     .get(input.conversationId);
   if (!existing) return null;
 
-  const now = Date.now();
+  const now = nowMs();
   db.run(
     'INSERT INTO chat_messages (id, conversation_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)',
     [input.id, input.conversationId, input.role, input.content, now]
@@ -130,6 +131,6 @@ export const updateConversationTitle = (
 ): number => {
   const { changes } = db
     .query('UPDATE conversations SET title = ?, updated_at = ? WHERE id = ?')
-    .run(title.trim(), Date.now(), id);
+    .run(title.trim(), nowMs(), id);
   return changes;
 };

@@ -1,4 +1,5 @@
 import type { Database } from 'bun:sqlite';
+import { nowMs } from '@/lib/time';
 
 type Config = {
   windowMs: number;
@@ -23,7 +24,7 @@ export const checkUserRateLimit = (
   if (process.env.NODE_ENV !== 'production') return false;
   if (process.env.TSS_PRERENDERING === 'true') return false;
 
-  const since = Date.now() - config.windowMs;
+  const since = nowMs() - config.windowMs;
   const row = db
     .query<{ count: number }, [string, number]>(
       'SELECT COUNT(*) as count FROM user_events WHERE type = ? AND created_at >= ?'

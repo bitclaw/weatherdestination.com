@@ -1,4 +1,5 @@
 import type { Database } from 'bun:sqlite';
+import { nowMs } from '@/lib/time';
 import { migration as m000 } from './migrations/20260608_000000_initial_schema';
 import { migration as m001 } from './migrations/20260608_000100_add_user_events';
 import { migration as m003 } from './migrations/20260608_000300_add_conversations';
@@ -81,7 +82,7 @@ export const runUserMigrations = (db: Database): void => {
       migration.run(db);
       db.run('INSERT INTO _warpkit_migrations (id, applied_at) VALUES (?, ?)', [
         migration.id,
-        Date.now()
+        nowMs()
       ]);
     })();
   }

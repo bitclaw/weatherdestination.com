@@ -2,6 +2,7 @@ import type { Database } from 'bun:sqlite';
 import { err, ok } from '@bitclaw/result';
 import { randomUUIDv7 } from 'bun';
 import { ERROR_CODES } from '@/lib/constants';
+import { nowMs } from '@/lib/time';
 import type { NoteRecord } from '../notes.constants';
 
 type NoteRow = {
@@ -41,7 +42,7 @@ export const createNote = (
   db: Database,
   input: { title: string; content?: string }
 ) => {
-  const now = Date.now();
+  const now = nowMs();
   const id = randomUUIDv7();
   db.run(
     'INSERT INTO notes (id, title, content, pinned, created_at, updated_at) VALUES (?, ?, ?, 0, ?, ?)',
@@ -59,7 +60,7 @@ export const updateNote = (
     .get(input.id);
   if (!existing) return err(ERROR_CODES.NOT_FOUND, 'Note not found.');
 
-  const now = Date.now();
+  const now = nowMs();
   db.run(
     'UPDATE notes SET title = ?, content = ?, updated_at = ? WHERE id = ?',
     [input.title.trim(), input.content?.trim() ?? '', now, input.id]
@@ -88,7 +89,7 @@ export const togglePin = (db: Database, id: string) => {
   const newPinned = existing.pinned === 1 ? 0 : 1;
   db.run('UPDATE notes SET pinned = ?, updated_at = ? WHERE id = ?', [
     newPinned,
-    Date.now(),
+    nowMs(),
     id
   ]);
   return ok(getNoteById(db, id) as NoteRecord);

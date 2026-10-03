@@ -2,6 +2,7 @@ import type { Database } from 'bun:sqlite';
 import { err, ok } from '@bitclaw/result';
 import { randomUUIDv7 } from 'bun';
 import { ERROR_CODES } from '@/lib/constants';
+import { nowMs } from '@/lib/time';
 import type { ApiKeyRecord, ApiKeyStatus } from '../api-keys.constants';
 
 type ApiKeyRow = {
@@ -50,7 +51,7 @@ export const listApiKeys = (db: Database): ApiKeyRecord[] =>
 export const createApiKey = (db: Database, input: { name: string }) => {
   const id = randomUUIDv7();
   const rawKey = generateKey();
-  const now = Date.now();
+  const now = nowMs();
 
   db.run(
     `INSERT INTO api_keys
@@ -101,5 +102,5 @@ export const deleteApiKey = (db: Database, id: string) => {
 // Called by app middleware on each authenticated API request.
 // High-frequency , does not log a user event.
 export const touchApiKey = (db: Database, id: string): void => {
-  db.run('UPDATE api_keys SET last_used_at = ? WHERE id = ?', [Date.now(), id]);
+  db.run('UPDATE api_keys SET last_used_at = ? WHERE id = ?', [nowMs(), id]);
 };

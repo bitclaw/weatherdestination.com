@@ -1,5 +1,6 @@
 import type { Database } from 'bun:sqlite';
 import { randomUUIDv7 } from 'bun';
+import { nowMs } from '@/lib/time';
 
 export type NotifyInput = { title: string; body?: string; href?: string };
 
@@ -19,6 +20,6 @@ export const notify = (db: Database, input: NotifyInput): void => {
   const body = input.body ? input.body.slice(0, MAX_BODY_LENGTH) : null;
   db.run(
     'INSERT INTO notifications (id, title, body, href, read, created_at) VALUES (?, ?, ?, ?, 0, ?)',
-    [randomUUIDv7(), title, body, href, Date.now()]
+    [randomUUIDv7(), title, body, href, nowMs()]
   );
 };

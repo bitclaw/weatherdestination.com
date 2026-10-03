@@ -18,6 +18,7 @@ import { config } from '@/config';
 import { recordAdminAuditEvent } from '@/features/admin/server/admin-audit-log.server';
 import { db } from '@/lib/db';
 import * as schema from '@/lib/db/schema';
+import { nowMs } from '@/lib/time';
 import { onUserCreatedSafely } from './auth-hooks';
 import { sendEmail } from './email';
 import { MagicLinkEmail, OtpEmail } from './email-templates';
@@ -77,7 +78,7 @@ export const bridgeTwoFactorChallenge = async (
     maxAge: TWO_FACTOR_COOKIE_MAX_AGE
   });
   const identifier = `2fa-${crypto.randomUUID()}`;
-  const expiresAt = new Date(Date.now() + TWO_FACTOR_COOKIE_MAX_AGE * 1000);
+  const expiresAt = new Date(nowMs() + TWO_FACTOR_COOKIE_MAX_AGE * 1000);
 
   await ctx.context.internalAdapter.createVerificationValue({
     value: data.user.id,

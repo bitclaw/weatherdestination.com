@@ -4,6 +4,7 @@ import { config, type PlanId, type StripePlan } from '@/config';
 import type { db as sharedDb } from '@/lib/db';
 import { subscriptions } from '@/lib/db/schema';
 import { stripe } from '@/lib/http-clients';
+import { msFromSeconds } from '@/lib/time';
 
 export type Db = typeof sharedDb;
 export type BillingMode = 'subscription' | 'one_time';
@@ -42,13 +43,13 @@ export const getPlanIdForPriceId = (
 // Stripe response, silently nulling out period tracking.
 export const getPeriodEnd = (sub: Stripe.Subscription): Date | null => {
   const raw = sub.items?.data[0]?.current_period_end;
-  return typeof raw === 'number' ? new Date(raw * 1000) : null;
+  return typeof raw === 'number' ? new Date(msFromSeconds(raw)) : null;
 };
 
 export const parseTrialEnd = (
   trialEnd: number | null | undefined
 ): Date | null => {
-  return trialEnd ? new Date(trialEnd * 1000) : null;
+  return trialEnd ? new Date(msFromSeconds(trialEnd)) : null;
 };
 
 // Stripe expandable fields arrive as either a plain id string or the

@@ -8,6 +8,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { cities } from '@/lib/db/schema';
 import { createLogger } from '@/lib/logger';
+import { nowMs } from '@/lib/time';
 import {
   isFresh,
   readCachedWeatherData,
@@ -198,7 +199,7 @@ export const updateCityWeatherData = async (
     avgTempHigh: temps.avgTempHigh,
     avgTempLow: temps.avgTempLow,
     fetchedAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    expiresAt: new Date(nowMs() + 30 * 24 * 60 * 60 * 1000).toISOString()
   };
   await writeCachedWeatherData(cacheData);
 
