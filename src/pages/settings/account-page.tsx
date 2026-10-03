@@ -9,6 +9,7 @@ import {
   accountSessionsQueryOptions,
   deleteMyAccountFn,
   exportMyDataFn,
+  SignInMethodsSection,
   TwoFactorSection
 } from '@/features/account';
 import { authClient } from '@/lib/auth-client';
@@ -17,7 +18,7 @@ import { ContentSection } from './content-section';
 
 type Props = { user: AppUser };
 
-export function AccountPage({ user: _user }: Props) {
+export function AccountPage({ user }: Props) {
   const { data, refetch: refetchSessions } = useSuspenseQuery(
     accountSessionsQueryOptions
   );
@@ -108,7 +109,7 @@ export function AccountPage({ user: _user }: Props) {
 
   return (
     <ContentSection
-      desc="Manage active sessions and irreversible account actions."
+      desc="Manage sign-in methods, active sessions and irreversible account actions."
       title="Account"
     >
       <div className="space-y-8">
@@ -187,6 +188,10 @@ export function AccountPage({ user: _user }: Props) {
             </ul>
           )}
         </div>
+
+        <Separator />
+
+        <SignInMethodsSection email={user.email} />
 
         <Separator />
 

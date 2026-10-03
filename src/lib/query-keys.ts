@@ -75,6 +75,7 @@ export const adminSchedulesQueryKey = () => ['admin', 'schedules'] as const;
 export const oneTimePurchaseQueryKey = () => ['one-time-purchase'] as const;
 
 export const deviceSessionsQueryKey = () => ['device-sessions'] as const;
+export const linkedAccountsQueryKey = () => ['linked-accounts'] as const;
 
 export const notificationPreferencesQueryKey = () =>
   ['notification-preferences'] as const;

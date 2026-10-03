@@ -2,6 +2,10 @@ import { queryOptions } from '@tanstack/react-query';
 import { authClient } from '@/lib/auth-client';
 import { deviceSessionsQueryKey } from '@/lib/query-keys';
 
+export {
+  linkedAccountsQueryOptions,
+  SignInMethodsSection
+} from './components/sign-in-methods-section';
 export { TwoFactorSection } from './components/two-factor-section';
 export { deleteMyAccountFn } from './server/account.mutations';
 export { exportMyDataFn } from './server/account.queries';

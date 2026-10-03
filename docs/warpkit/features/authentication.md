@@ -90,6 +90,16 @@ New user lands on `/two-factor` (`src/pages/two-factor/`, `src/routes/_auth.two-
 
 **Known limitation**: Branch C (OAuth) is source-verified but not exercised end-to-end against a real provider in this app's own test/dev setup (no OAuth credentials configured there). Branches A and B are both fully verified end-to-end — real TOTP codes, real sessions, real UI — against a running server.
 
+## Sign-in methods (Settings → Account)
+
+`SignInMethodsSection` (`src/features/account/components/sign-in-methods-section.tsx`) lists Email plus each social provider the login page offers (`config.auth.socialProviders`: Google, GitHub, GitLab), with Connect (`authClient.linkSocial`, full-page redirect back to `/dashboard/settings/account`) or Disconnect (`authClient.unlinkAccount` for every `accounts` row of that provider).
+
+`accountLinking.allowDifferentEmails: true` is required: the provider is linked to the signed-in user, and a GitHub/GitLab email often differs from the account email, which better-auth otherwise rejects with "email doesn't match".
+
+`accountLinking.allowUnlinkingAll: true` is required: email-OTP sign-in creates only the user row (no `accounts` row), so better-auth's default "can't unlink your last account" guard would block an OTP user from removing their single social login even though email sign-in always works. Unlinking needs a fresh session (`freshSessionMiddleware`, 24h); the UI maps `SESSION_NOT_FRESH` to a "sign in again" message.
+
+No "Last used" date: better-auth's `account.updatedAt` has no `onUpdate`, so it isn't bumped on sign-in, and the login page's "Last used" badge is per-browser `localStorage`. Rows show "Connected {date}" from `createdAt` instead.
+
 ## Welcome email
 
 A welcome email is sent automatically on first signup via `databaseHooks.user.create.after` in `src/server/auth.ts`. Edit the `WelcomeEmail` template in `src/server/email-templates.tsx`.

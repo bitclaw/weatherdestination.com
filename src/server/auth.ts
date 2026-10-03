@@ -130,8 +130,20 @@ export const auth = betterAuth({
   // primary email sits in Devise's unconfirmed_email until confirmed, so the
   // email /user returns is always confirmed. Re-check before supporting a
   // self-managed GitLab instance (that setting is instance-configurable).
+  //
+  // allowDifferentEmails: Settings → Account → Sign-in methods links a
+  // provider to the already signed-in user, whose GitHub/GitLab email often
+  // differs from the account email; without it linkSocial fails with
+  // "email doesn't match".
+  //
+  // allowUnlinkingAll: email OTP / magic-link users have no `accounts` row
+  // (email-otp's sign-in creates only the user), so better-auth's default
+  // "can't unlink your last account" guard would refuse to remove the one
+  // social login an OTP user linked, even though email sign-in always works.
   account: {
     accountLinking: {
+      allowDifferentEmails: true,
+      allowUnlinkingAll: true,
       trustedProviders: ['gitlab']
     }
   },
