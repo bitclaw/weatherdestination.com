@@ -76,3 +76,19 @@ packages published the same day (the TanStack fix needed about 15
 `@tanstack/*` packages plus `@tanstack/react-store`, which was only found
 on the first failed install). The command-line override handles all of
 them at once, which an exclude list can't do cleanly.
+
+## Vulnerable transitive dependency
+
+When the fixed version is inside the range the parent already accepts
+(for example `brace-expansion` 5.0.12 under `minimatch`'s `^5.0.5`), run
+`bun audit fix`. It re-resolves only the vulnerable packages, within their
+ranges. No `overrides` entry, so nothing
+is pinned to go stale later. Check the age of every version it adds, as
+in step 3 above.
+
+Don't hand-delete entries from `bun.lock` to force a re-resolve: bun
+rejects the lockfile as invalid, ignores it, and re-resolves every
+package (189 changed versions in runmist on 2026-10-03).
+
+Use `overrides` only when the parent's range excludes the fix and the
+parent has no release that widens it.
