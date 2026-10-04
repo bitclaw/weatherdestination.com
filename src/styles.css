@@ -56,8 +56,8 @@ code {
 	--warning-foreground: oklch(97% 0.02 58.3);
 	--info: oklch(54.6% 0.22 262.9);
 	--info-foreground: oklch(97% 0.02 262.9);
-	--border: oklch(88% 0.02 230);
-	--input: oklch(88% 0.02 230);
+	--border: oklch(84% 0.02 230);
+	--input: oklch(82% 0.02 230);
 	--ring: oklch(55% 0.22 230);
 	--highlight: oklch(55% 0.22 230);
 
@@ -277,6 +277,12 @@ code {
 
 body:has(main[data-layout='fixed']) {
 	overflow: hidden;
+}
+
+@media (min-width: 64rem) {
+	body:has(main[data-layout='fixed-desktop']) {
+		overflow: hidden;
+	}
 }
 
 @utility faded-bottom {

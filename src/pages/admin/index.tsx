@@ -10,7 +10,7 @@ export function AdminLayout() {
         <div className="flex-1" />
         <ThemeSwitcher />
       </Header>
-      <Main className="gap-4 sm:gap-6" fixed>
+      <Main className="gap-4 sm:gap-6">
         <Outlet />
       </Main>
     </>

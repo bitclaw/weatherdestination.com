@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '@/components/ui/error-banner';
+import { SimpleSelect } from '@/components/ui/simple-select';
 import {
   activeJobsQueryOptions,
   cancelAdminJob,
@@ -405,41 +406,36 @@ function ActiveJobsTab({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <select
-          className="bg-background rounded-md border px-2 py-1.5 text-sm"
-          onChange={e => onStatusChange(e.target.value)}
+        <SimpleSelect
+          className="w-auto py-1.5"
+          items={[
+            { value: '', label: 'All statuses' },
+            ...STATUSES.map(s => ({ value: s, label: s }))
+          ]}
+          onChange={v => onStatusChange(v)}
+          placeholder="Select..."
           value={statusFilter}
-        >
-          <option value="">All statuses</option>
-          {STATUSES.map(s => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <select
-          className="bg-background rounded-md border px-2 py-1.5 text-sm"
-          onChange={e => onTypeChange(e.target.value)}
+        />
+        <SimpleSelect
+          className="w-auto py-1.5"
+          items={[
+            { value: '', label: 'All types' },
+            ...jobTypes.map(t => ({ value: t, label: t }))
+          ]}
+          onChange={v => onTypeChange(v)}
+          placeholder="Select..."
           value={typeFilter}
-        >
-          <option value="">All types</option>
-          {jobTypes.map(t => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-        <select
-          className="bg-background rounded-md border px-2 py-1.5 text-sm"
-          onChange={e => onLimitChange(Number(e.target.value))}
-          value={limit}
-        >
-          {[5, 10, 25].map(n => (
-            <option key={n} value={n}>
-              {n} / page
-            </option>
-          ))}
-        </select>
+        />
+        <SimpleSelect
+          className="w-auto py-1.5"
+          items={[5, 10, 25].map(n => ({
+            value: String(n),
+            label: `${n} / page`
+          }))}
+          onChange={v => onLimitChange(Number(v))}
+          placeholder="Select..."
+          value={String(limit)}
+        />
         <span className="text-muted-foreground text-sm">{total} total</span>
       </div>
 
@@ -584,18 +580,16 @@ function FailedJobsTab({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <select
-          className="bg-background rounded-md border px-2 py-1.5 text-sm"
-          onChange={e => onTypeChange(e.target.value)}
+        <SimpleSelect
+          className="w-auto py-1.5"
+          items={[
+            { value: '', label: 'All types' },
+            ...jobTypes.map(t => ({ value: t, label: t }))
+          ]}
+          onChange={v => onTypeChange(v)}
+          placeholder="Select..."
           value={typeFilter}
-        >
-          <option value="">All types</option>
-          {jobTypes.map(t => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+        />
         <span className="text-muted-foreground text-sm">
           {total} dead-lettered
         </span>

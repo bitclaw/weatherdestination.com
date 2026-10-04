@@ -26,7 +26,7 @@ export function AppLayout({
   return (
     <SidebarProvider defaultOpen={getSidebarCookie()}>
       <AppSidebar flags={flags} isAdmin={isAdmin} plan={plan} user={user} />
-      <SidebarInset className="@container/content has-data-[layout=fixed]:h-svh">
+      <SidebarInset className="@container/content has-data-[layout=fixed]:h-svh lg:has-data-[layout=fixed-desktop]:h-svh">
         {impersonatedBy && (
           <div className="flex h-10 items-center justify-between border-b bg-warning/10 px-4 text-warning">
             <span className="text-xs font-medium">
